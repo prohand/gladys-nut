@@ -3,8 +3,8 @@
   "type": "device",
   "name": "Network UPS Tools (NUT)",
   "description": {
-    "en": "Monitor one or more uninterruptible power supplies exposed by a Network UPS Tools server.",
-    "fr": "Supervisez un ou plusieurs onduleurs exposés par un serveur Network UPS Tools."
+    "en": "Monitor uninterruptible power supplies exposed by up to five Network UPS Tools servers.",
+    "fr": "Supervisez les onduleurs exposés par jusqu’à cinq serveurs Network UPS Tools."
   },
   "version": "1.0.0",
   "docker_image": "ghcr.io/prohand/gladys-nut:1.0.0",
@@ -16,10 +16,10 @@
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "NUT server", "fr": "Serveur NUT" },
+      "label": { "en": "NUT servers", "fr": "Serveurs NUT" },
       "description": {
-        "en": "Provide the network address of an accessible upsd server. The integration discovers all UPS devices and only creates sensors for values reported by each device.",
-        "fr": "Indiquez l’adresse réseau d’un serveur upsd accessible. L’intégration détecte tous les onduleurs et ne crée que les capteurs correspondant aux valeurs remontées par chaque appareil."
+        "en": "Configure one or more reachable upsd servers. Every UPS exposed by every configured server is discovered as a separate Gladys device.",
+        "fr": "Configurez un ou plusieurs serveurs upsd accessibles. Chaque onduleur exposé par chaque serveur configuré est découvert comme un appareil Gladys distinct."
       },
       "links": [
         {
@@ -29,20 +29,20 @@
       ]
     },
     {
-      "key": "host",
+      "key": "server_1_host",
       "type": "string",
-      "label": { "en": "Server host", "fr": "Hôte du serveur" },
+      "label": { "en": "Server 1 host", "fr": "Hôte du serveur 1" },
       "description": {
-        "en": "IP address or DNS name of the NUT upsd server.",
-        "fr": "Adresse IP ou nom DNS du serveur NUT upsd."
+        "en": "IP address or DNS name of the first NUT upsd server.",
+        "fr": "Adresse IP ou nom DNS du premier serveur NUT upsd."
       },
       "placeholder": { "en": "192.168.1.20", "fr": "192.168.1.20" },
       "required": true
     },
     {
-      "key": "port",
+      "key": "server_1_port",
       "type": "number",
-      "label": { "en": "Server port", "fr": "Port du serveur" },
+      "label": { "en": "Server 1 port", "fr": "Port du serveur 1" },
       "description": {
         "en": "The default NUT TCP port is 3493.",
         "fr": "Le port TCP NUT par défaut est 3493."
@@ -53,25 +53,137 @@
       "max": 65535
     },
     {
-      "key": "username",
+      "key": "server_1_username",
       "type": "string",
-      "label": { "en": "Username (optional)", "fr": "Nom d’utilisateur (facultatif)" },
-      "description": {
-        "en": "Only set this when your NUT server requires authentication for monitoring queries.",
-        "fr": "À renseigner uniquement si votre serveur NUT impose une authentification pour les requêtes de supervision."
+      "label": {
+        "en": "Server 1 username (optional)",
+        "fr": "Nom d’utilisateur du serveur 1 (facultatif)"
       },
-      "placeholder": { "en": "gladys", "fr": "gladys" },
       "required": false
     },
     {
-      "key": "password",
+      "key": "server_1_password",
       "type": "secret",
-      "label": { "en": "Password (optional)", "fr": "Mot de passe (facultatif)" },
-      "description": {
-        "en": "Required when a username is configured. It is stored as a secret and is never sent back to the browser.",
-        "fr": "Obligatoire lorsqu’un nom d’utilisateur est configuré. Cette valeur est stockée comme secret et n’est jamais renvoyée au navigateur."
+      "label": {
+        "en": "Server 1 password (optional)",
+        "fr": "Mot de passe du serveur 1 (facultatif)"
       },
-      "placeholder": { "en": "Password", "fr": "Mot de passe" },
+      "description": {
+        "en": "Required when a username is configured.",
+        "fr": "Obligatoire lorsqu’un nom d’utilisateur est configuré."
+      },
+      "required": false
+    },
+    {
+      "key": "server_2_host",
+      "type": "string",
+      "label": { "en": "Server 2 host (optional)", "fr": "Hôte du serveur 2 (facultatif)" },
+      "placeholder": { "en": "192.168.1.21", "fr": "192.168.1.21" },
+      "required": false
+    },
+    {
+      "key": "server_2_port",
+      "type": "number",
+      "label": { "en": "Server 2 port", "fr": "Port du serveur 2" },
+      "required": false,
+      "default": 3493,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "server_2_username",
+      "type": "string",
+      "label": { "en": "Server 2 username", "fr": "Nom d’utilisateur du serveur 2" },
+      "required": false
+    },
+    {
+      "key": "server_2_password",
+      "type": "secret",
+      "label": { "en": "Server 2 password", "fr": "Mot de passe du serveur 2" },
+      "required": false
+    },
+    {
+      "key": "server_3_host",
+      "type": "string",
+      "label": { "en": "Server 3 host (optional)", "fr": "Hôte du serveur 3 (facultatif)" },
+      "placeholder": { "en": "192.168.1.22", "fr": "192.168.1.22" },
+      "required": false
+    },
+    {
+      "key": "server_3_port",
+      "type": "number",
+      "label": { "en": "Server 3 port", "fr": "Port du serveur 3" },
+      "required": false,
+      "default": 3493,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "server_3_username",
+      "type": "string",
+      "label": { "en": "Server 3 username", "fr": "Nom d’utilisateur du serveur 3" },
+      "required": false
+    },
+    {
+      "key": "server_3_password",
+      "type": "secret",
+      "label": { "en": "Server 3 password", "fr": "Mot de passe du serveur 3" },
+      "required": false
+    },
+    {
+      "key": "server_4_host",
+      "type": "string",
+      "label": { "en": "Server 4 host (optional)", "fr": "Hôte du serveur 4 (facultatif)" },
+      "placeholder": { "en": "192.168.1.23", "fr": "192.168.1.23" },
+      "required": false
+    },
+    {
+      "key": "server_4_port",
+      "type": "number",
+      "label": { "en": "Server 4 port", "fr": "Port du serveur 4" },
+      "required": false,
+      "default": 3493,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "server_4_username",
+      "type": "string",
+      "label": { "en": "Server 4 username", "fr": "Nom d’utilisateur du serveur 4" },
+      "required": false
+    },
+    {
+      "key": "server_4_password",
+      "type": "secret",
+      "label": { "en": "Server 4 password", "fr": "Mot de passe du serveur 4" },
+      "required": false
+    },
+    {
+      "key": "server_5_host",
+      "type": "string",
+      "label": { "en": "Server 5 host (optional)", "fr": "Hôte du serveur 5 (facultatif)" },
+      "placeholder": { "en": "192.168.1.24", "fr": "192.168.1.24" },
+      "required": false
+    },
+    {
+      "key": "server_5_port",
+      "type": "number",
+      "label": { "en": "Server 5 port", "fr": "Port du serveur 5" },
+      "required": false,
+      "default": 3493,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "server_5_username",
+      "type": "string",
+      "label": { "en": "Server 5 username", "fr": "Nom d’utilisateur du serveur 5" },
+      "required": false
+    },
+    {
+      "key": "server_5_password",
+      "type": "secret",
+      "label": { "en": "Server 5 password", "fr": "Mot de passe du serveur 5" },
       "required": false
     },
     {
@@ -91,7 +203,7 @@
   "actions": [
     {
       "key": "test_connection",
-      "label": { "en": "Test NUT connection", "fr": "Tester la connexion NUT" },
+      "label": { "en": "Test NUT connections", "fr": "Tester les connexions NUT" },
       "timeout_seconds": 20
     }
   ]

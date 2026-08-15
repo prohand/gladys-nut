@@ -3,7 +3,9 @@
 //
 // NUT drivers do not all expose the same variables. Discovery therefore builds
 // each device from the variables that its upsd server actually reports instead
-// of creating permanently empty sensors.
+// of creating permanently empty sensors. A device identity includes both the
+// server and the UPS name, so identical UPS names on different servers remain
+// independent in Gladys.
 // -----------------------------------------------------------------------------
 
 import {
@@ -128,26 +130,8 @@ const NUMERIC_VARIABLES = [
   },
 ];
 
-const TEXT_VARIABLES = [
-  {
-    variable: 'ups.status',
-    key: 'status',
-    name: 'Status',
-  },
-  {
-    variable: 'ups.alarm',
-    key: 'alarm',
-    name: 'Alarm',
-  },
-  {
-    variable: 'battery.charger.status',
-    key: 'charger-status',
-    name: 'Battery charger status',
-  },
-];
-
-function platformId(config, upsName) {
-  return `${encodeURIComponent(config.host)}-${config.port}-${encodeURIComponent(upsName)}`;
+function platformId(server, upsName) {
+  return `${encodeURIComponent(server.host)}-${server.port}-${encodeURIComponent(upsName)}`;
 }
 
 function valueAsNumber(variables, variable) {
@@ -167,20 +151,9 @@ function featureFromDefinition(ids, definition) {
   };
 }
 
-function textFeature(ids, definition) {
-  return {
-    name: definition.name,
-    external_id: ids.feature(definition.key),
-    category: DEVICE_FEATURE_CATEGORIES.TEXT,
-    type: DEVICE_FEATURE_TYPES.TEXT.TEXT,
-    read_only: true,
-    has_feedback: false,
-    keep_history: false,
-  };
-}
-
-export function buildUpsDevice(gladys, config, snapshot) {
-  const ids = gladys.externalIds(DEVICE_TYPE, platformId(config, snapshot.name));
+export function buildUpsDevice(gladys, config, discovered) {
+  const { server, snapshot } = discovered;
+  const ids = gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name));
   const manufacturer = snapshot.variables.get('device.mfr') ?? snapshot.variables.get('ups.mfr');
   const model = snapshot.variables.get('device.model') ?? snapshot.variables.get('ups.model');
   const name =
@@ -189,70 +162,84 @@ export function buildUpsDevice(gladys, config, snapshot) {
   const numericFeatures = NUMERIC_VARIABLES.filter(
     (definition) => valueAsNumber(snapshot.variables, definition.variable) !== undefined,
   ).map((definition) => featureFromDefinition(ids, definition));
-  const textFeatures = TEXT_VARIABLES.filter((definition) =>
-    snapshot.variables.has(definition.variable),
-  ).map((definition) => textFeature(ids, definition));
-
   return {
-    name,
+    name: `${name} (${server.host})`,
     external_id: ids.device,
     // Gladys Core expects polling frequencies in milliseconds; the manifest and
     // user-facing configuration deliberately stay in seconds.
     poll_frequency: config.poll_frequency * 1000,
-    features: [...numericFeatures, ...textFeatures],
+    // Text features are intentionally not published: older Gladys Core releases
+    // reject the `text` category with HTTP 422 during discovery validation.
+    features: numericFeatures,
   };
 }
 
-export function buildDiscoveredDevices(gladys, config, snapshots) {
-  return snapshots.map((snapshot) => buildUpsDevice(gladys, config, snapshot));
+export function buildDiscoveredDevices(gladys, config, discovered) {
+  return discovered.map((item) => buildUpsDevice(gladys, config, item));
 }
 
-export function buildUpsStates(gladys, config, snapshot) {
-  const ids = gladys.externalIds(DEVICE_TYPE, platformId(config, snapshot.name));
+export function buildUpsStates(gladys, _config, discovered) {
+  const { server, snapshot } = discovered;
+  const ids = gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name));
   const numericStates = NUMERIC_VARIABLES.flatMap((definition) => {
     const value = valueAsNumber(snapshot.variables, definition.variable);
     return value === undefined
       ? []
       : [{ device_feature_external_id: ids.feature(definition.key), state: value }];
   });
-  const textStates = TEXT_VARIABLES.flatMap((definition) => {
-    const value = snapshot.variables.get(definition.variable);
-    return value === undefined
-      ? []
-      : [{ device_feature_external_id: ids.feature(definition.key), state: { text: value } }];
-  });
-  return [...numericStates, ...textStates];
+  return numericStates;
 }
 
 export async function discoverUpses(config) {
-  const snapshots = await getNutSnapshot(config);
-  logger.info(`Discovered ${snapshots.length} UPS device(s) on ${config.host}:${config.port}.`);
-  return snapshots;
+  const results = await Promise.all(
+    config.servers.map(async (server) => {
+      try {
+        const snapshots = await getNutSnapshot({ ...server, timeout: config.timeout });
+        return { server, snapshots, error: null };
+      } catch (error) {
+        logger.error(`NUT server ${server.host}:${server.port} is unavailable`, error);
+        return { server, snapshots: [], error };
+      }
+    }),
+  );
+  const discovered = results.flatMap(({ server, snapshots }) =>
+    snapshots.map((snapshot) => ({ server, snapshot })),
+  );
+  const errors = results.filter(({ error }) => error).map(({ error }) => error);
+  if (discovered.length === 0 && errors.length === results.length) {
+    throw new Error(`None of the ${results.length} configured NUT servers could be reached.`);
+  }
+  logger.info(
+    `Discovered ${discovered.length} UPS device(s) on ${config.servers.length} NUT server(s).`,
+  );
+  return discovered;
 }
 
 export async function publishUpsStates(gladys, config, deviceExternalId) {
-  const snapshots = await discoverUpses(config);
-  const snapshot = snapshots.find(
-    (candidate) =>
-      gladys.externalIds(DEVICE_TYPE, platformId(config, candidate.name)).device ===
+  const discovered = await discoverUpses(config);
+  const item = discovered.find(
+    ({ server, snapshot }) =>
+      gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name)).device ===
       deviceExternalId,
   );
-  if (!snapshot) {
-    throw new Error(`The UPS for ${deviceExternalId} is no longer exposed by the NUT server.`);
+  if (!item) {
+    throw new Error(`The UPS for ${deviceExternalId} is no longer exposed by the NUT servers.`);
   }
 
-  const states = buildUpsStates(gladys, config, snapshot);
+  const states = buildUpsStates(gladys, config, item);
   if (states.length > 0) {
     await gladys.publishStates(states);
   }
-  return snapshot;
+  return item;
 }
 
 export async function testNutConnection(config) {
-  const snapshots = await discoverUpses(config);
-  const names = snapshots.map((snapshot) => snapshot.name).join(', ');
+  const discovered = await discoverUpses(config);
+  const names = discovered
+    .map(({ server, snapshot }) => `${snapshot.name}@${server.host}`)
+    .join(', ');
   return {
-    en: `${snapshots.length} UPS device(s) found${names ? `: ${names}.` : '.'}`,
-    fr: `${snapshots.length} onduleur(s) détecté(s)${names ? ` : ${names}.` : '.'}`,
+    en: `${discovered.length} UPS device(s) found${names ? `: ${names}.` : '.'}`,
+    fr: `${discovered.length} onduleur(s) détecté(s)${names ? ` : ${names}.` : '.'}`,
   };
 }

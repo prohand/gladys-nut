@@ -17,11 +17,11 @@ Par défaut, `upsd` écoute en TCP sur le port **3493**. Vérifiez également qu
 ## Configuration
 
 1. Ouvrez **Intégrations**, puis l’intégration **Network UPS Tools (NUT)**.
-2. Dans l’onglet **Configuration**, renseignez l’adresse IP ou le nom DNS de votre serveur `upsd`.
-3. Laissez le port à `3493`, sauf si votre installation utilise un autre port.
-4. Si le serveur impose une authentification pour les requêtes de supervision, renseignez le nom d’utilisateur et le mot de passe NUT. Le mot de passe est conservé comme secret.
+2. Dans l’onglet **Configuration**, renseignez le premier serveur `upsd` ; son hôte est obligatoire.
+3. Ajoutez si nécessaire jusqu’à quatre serveurs supplémentaires dans les emplacements optionnels.
+4. Pour chaque serveur, laissez le port à `3493` sauf si votre installation utilise un autre port. Renseignez aussi les identifiants NUT si une authentification est requise.
 5. Choisissez l’intervalle de rafraîchissement. La valeur par défaut de 60 secondes convient à la plupart des installations.
-6. Enregistrez, puis utilisez **Tester la connexion NUT**.
+6. Enregistrez, puis utilisez **Tester les connexions NUT**.
 
 Une fois la connexion validée, Gladys découvre tous les onduleurs retournés par le serveur NUT. Chaque onduleur apparaît comme un appareil distinct dans la découverte Gladys. Dans l’onglet **Découverte**, cliquez sur **Ajouter** pour chaque onduleur que vous souhaitez intégrer : vous pouvez en ajouter plusieurs, indépendamment les uns des autres. La liste est reconstruite à chaque scan à partir de la commande NUT `LIST UPS`.
 
@@ -29,20 +29,20 @@ Une fois la connexion validée, Gladys découvre tous les onduleurs retournés p
 
 Les pilotes NUT ne renvoient pas tous les mêmes variables. L’intégration crée donc seulement les capteurs correspondant aux informations réellement publiées par l’onduleur.
 
-| Domaine      | Variables possibles                                           |
-| ------------ | ------------------------------------------------------------- |
-| Batterie     | Charge, autonomie, tension, température et statut du chargeur |
-| Alimentation | Tension et courant d’entrée/sortie                            |
-| Charge       | Charge en pourcentage, puissance réelle et apparente          |
-| Onduleur     | Température, statut et alarmes                                |
+| Domaine      | Variables possibles                                  |
+| ------------ | ---------------------------------------------------- |
+| Batterie     | Charge, autonomie, tension et température            |
+| Alimentation | Tension et courant d’entrée/sortie                   |
+| Charge       | Charge en pourcentage, puissance réelle et apparente |
+| Onduleur     | Température, statut et alarmes                       |
 
-Les statuts NUT tels que `OL` (alimentation secteur), `OB` (sur batterie) ou `LB` (batterie faible) sont exposés dans le capteur texte **Statut**. Leur interprétation exacte dépend du pilote et du matériel.
+Les mesures sont publiées uniquement lorsqu’elles sont numériques et effectivement retournées par le pilote. Les statuts textuels NUT sont lus pendant la communication mais ne sont pas publiés comme fonctionnalités Gladys afin de rester compatibles avec les versions Core qui ne reconnaissent pas encore la catégorie `text`.
 
 ## Dépannage
 
 | Symptôme                             | Vérifications recommandées                                                                                          |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Aucun onduleur détecté               | Vérifiez l’hôte, le port, le pare-feu et la présence d’au moins un onduleur dans `ups.conf`.                        |
+| Aucun onduleur détecté               | Vérifiez chaque hôte, port, pare-feu et la présence d’au moins un onduleur dans chaque `ups.conf`.                  |
 | Erreur d’accès ou d’authentification | Vérifiez les ACL dans `upsd.conf` et les identifiants définis dans `upsd.users`.                                    |
 | Certaines mesures manquent           | Exécutez `upsc <nom>@<serveur>` ; seules les variables retournées par votre pilote peuvent être créées dans Gladys. |
 | Données obsolètes                    | Vérifiez que le pilote NUT communique encore avec le matériel et consultez les logs `upsd`.                         |

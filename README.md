@@ -8,19 +8,18 @@ Cette intégration externe permet à [Gladys Assistant](https://gladysassistant.
 
 Au démarrage et à chaque demande de scan, l’intégration exécute `LIST UPS` sur le serveur NUT configuré. Elle crée ensuite un appareil Gladys par onduleur détecté, avec uniquement les fonctionnalités dont les variables sont effectivement disponibles sur le matériel.
 
-| Famille             | Variables NUT exploitées                                                                                | Type dans Gladys                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| Batterie            | `battery.charge`, `battery.runtime`, `battery.voltage`, `battery.temperature`, `battery.charger.status` | Niveau, durée, mesures et statut |
-| État                | `ups.status`, `ups.alarm`                                                                               | Statuts textuels                 |
-| Charge et puissance | `ups.load`, `ups.realpower`, `ups.power`                                                                | Pourcentage, W et VA             |
-| Électricité         | `input.voltage`, `output.voltage`, `input.current`, `output.current`                                    | V et A                           |
-| Température         | `ups.temperature`                                                                                       | °C                               |
+| Famille             | Variables NUT exploitées                                                      | Type dans Gladys         |
+| ------------------- | ----------------------------------------------------------------------------- | ------------------------ |
+| Batterie            | `battery.charge`, `battery.runtime`, `battery.voltage`, `battery.temperature` | Niveau, durée et mesures |
+| Charge et puissance | `ups.load`, `ups.realpower`, `ups.power`                                      | Pourcentage, W et VA     |
+| Électricité         | `input.voltage`, `output.voltage`, `input.current`, `output.current`          | V et A                   |
+| Température         | `ups.temperature`                                                             | °C                       |
 
 Les valeurs sont actualisées via `LIST VAR <upsname>` à la fréquence configurée. Les onduleurs et les fonctionnalités sont découverts dynamiquement, ce qui permet de prendre en charge plusieurs modèles et plusieurs pilotes NUT sans configuration manuelle d’identifiants matériels.
 
 ## Configuration dans Gladys
 
-Dans la page de configuration de l’intégration, renseignez l’hôte ou l’adresse IP du serveur `upsd`, son port TCP — **3493** par défaut — puis choisissez un intervalle de rafraîchissement compris entre 30 et 3 600 secondes. Les identifiants NUT sont facultatifs ; lorsque le serveur demande une authentification pour les requêtes de supervision, configurez le nom d’utilisateur et le mot de passe associés.
+Dans la page de configuration de l’intégration, configurez jusqu’à **cinq serveurs `upsd`**. Le premier serveur est obligatoire ; les quatre suivants sont facultatifs. Pour chaque serveur, renseignez l’hôte, le port TCP — **3493** par défaut — et, si nécessaire, les identifiants NUT. Choisissez ensuite un intervalle de rafraîchissement compris entre 30 et 3 600 secondes. Tous les onduleurs de tous les serveurs configurés sont découverts séparément.
 
 Le bouton **Tester la connexion NUT** vérifie l’accès au serveur et affiche le nombre d’onduleurs détectés. En cas d’échec, l’état de connexion de l’intégration explique l’erreur remontée par le serveur ou le réseau.
 
@@ -32,7 +31,7 @@ Le serveur NUT doit autoriser les connexions provenant de l’environnement Glad
 Gladys ── SDK WebSocket ── intégration gladys-nut ── TCP 3493 ── NUT upsd ── onduleur(s)
 ```
 
-Le client TCP interne est volontairement limité aux commandes NUT de lecture `LIST UPS` et `LIST VAR`. Il ouvre une connexion courte par requête, gère les réponses multi-lignes ainsi que l’authentification facultative `USERNAME` / `PASSWORD`, puis publie les états confirmés par le serveur NUT.
+Le client TCP interne est volontairement limité aux commandes NUT de lecture `LIST UPS` et `LIST VAR`. Il ouvre une connexion courte par requête, gère les réponses multi-lignes ainsi que l’authentification facultative `USERNAME` / `PASSWORD`, puis publie les mesures numériques confirmées par le serveur NUT. Les fonctionnalités textuelles sont volontairement omises pour rester compatibles avec les versions de Gladys Core antérieures à la prise en charge de la catégorie `text`.
 
 ## Développement local
 
