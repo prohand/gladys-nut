@@ -40,14 +40,15 @@ Values are published only when they are numeric and actually reported by the dri
 
 ## Troubleshooting
 
-| Symptom                                                | Recommended checks                                                                                                                                  |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No UPS is found                                        | Check every host, port, firewall, and that at least one UPS is configured in each `ups.conf`.                                                       |
-| Access or authentication error                         | Check the ACLs in `upsd.conf` and credentials defined in `upsd.users`.                                                                              |
-| Some values are missing                                | Run `upsc <ups>@<server>`; Gladys can only create variables exposed by your NUT driver.                                                             |
-| Stale data                                             | Verify that the NUT driver still communicates with the hardware and inspect the `upsd` logs.                                                        |
-| Adding a UPS fails with "incomplete or invalid device" | Update the integration. That rejection (HTTP 422) came from features published without their `min` and `max` bounds, which are now always declared. |
-| Values never change after adding the device            | Update the integration: devices are now published with periodic polling enabled.                                                                    |
+| Symptom                                                | Recommended checks                                                                                                                                                                                                                     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No UPS is found                                        | Check every host, port, firewall, and that at least one UPS is configured in each `ups.conf`.                                                                                                                                          |
+| Access or authentication error                         | Check the ACLs in `upsd.conf` and credentials defined in `upsd.users`.                                                                                                                                                                 |
+| Some values are missing                                | Run `upsc <ups>@<server>`; Gladys can only create variables exposed by your NUT driver.                                                                                                                                                |
+| Stale data                                             | Verify that the NUT driver still communicates with the hardware and inspect the `upsd` logs.                                                                                                                                           |
+| Adding a UPS fails with "incomplete or invalid device" | Update the integration. That rejection (HTTP 422) came from features published without their `min` and `max` bounds, which are now always declared.                                                                                    |
+| Values never change after adding the device            | Update the integration: devices are now published with periodic polling enabled.                                                                                                                                                       |
+| Some features are displayed without a name or an icon  | Update the integration, then add the UPS again from the **Discovery** tab so its existing features are updated: the load and the apparent power were published on a category/type pair the Gladys front-end does not know how to draw. |
 
 For detailed errors, open the integration logs in Gladys. You can also set `LOG_LEVEL=debug` for more detailed logs.
 
