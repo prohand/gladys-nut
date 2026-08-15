@@ -1,0 +1,98 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Network UPS Tools (NUT)",
+  "description": {
+    "en": "Monitor one or more uninterruptible power supplies exposed by a Network UPS Tools server.",
+    "fr": "Supervisez un ou plusieurs onduleurs exposés par un serveur Network UPS Tools."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/prohand/gladys-nut:1.0.0",
+  "gladys_version": ">=4.86.0",
+  "cover_image": "https://raw.githubusercontent.com/prohand/gladys-nut/main/cover.jpg",
+  "categories": ["energy", "network"],
+  "transports": ["local"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "NUT server", "fr": "Serveur NUT" },
+      "description": {
+        "en": "Provide the network address of an accessible upsd server. The integration discovers all UPS devices and only creates sensors for values reported by each device.",
+        "fr": "Indiquez l’adresse réseau d’un serveur upsd accessible. L’intégration détecte tous les onduleurs et ne crée que les capteurs correspondant aux valeurs remontées par chaque appareil."
+      },
+      "links": [
+        {
+          "url": "https://networkupstools.org/docs/developer-guide.chunked/net-protocol.html",
+          "label": { "en": "NUT network protocol", "fr": "Protocole réseau NUT" }
+        }
+      ]
+    },
+    {
+      "key": "host",
+      "type": "string",
+      "label": { "en": "Server host", "fr": "Hôte du serveur" },
+      "description": {
+        "en": "IP address or DNS name of the NUT upsd server.",
+        "fr": "Adresse IP ou nom DNS du serveur NUT upsd."
+      },
+      "placeholder": { "en": "192.168.1.20", "fr": "192.168.1.20" },
+      "required": true
+    },
+    {
+      "key": "port",
+      "type": "number",
+      "label": { "en": "Server port", "fr": "Port du serveur" },
+      "description": {
+        "en": "The default NUT TCP port is 3493.",
+        "fr": "Le port TCP NUT par défaut est 3493."
+      },
+      "required": false,
+      "default": 3493,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "username",
+      "type": "string",
+      "label": { "en": "Username (optional)", "fr": "Nom d’utilisateur (facultatif)" },
+      "description": {
+        "en": "Only set this when your NUT server requires authentication for monitoring queries.",
+        "fr": "À renseigner uniquement si votre serveur NUT impose une authentification pour les requêtes de supervision."
+      },
+      "placeholder": { "en": "gladys", "fr": "gladys" },
+      "required": false
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": { "en": "Password (optional)", "fr": "Mot de passe (facultatif)" },
+      "description": {
+        "en": "Required when a username is configured. It is stored as a secret and is never sent back to the browser.",
+        "fr": "Obligatoire lorsqu’un nom d’utilisateur est configuré. Cette valeur est stockée comme secret et n’est jamais renvoyée au navigateur."
+      },
+      "placeholder": { "en": "Password", "fr": "Mot de passe" },
+      "required": false
+    },
+    {
+      "key": "poll_frequency",
+      "type": "number",
+      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "description": {
+        "en": "How often Gladys refreshes values for each UPS.",
+        "fr": "Fréquence à laquelle Gladys actualise les valeurs de chaque onduleur."
+      },
+      "required": false,
+      "default": 60,
+      "min": 30,
+      "max": 3600
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "label": { "en": "Test NUT connection", "fr": "Tester la connexion NUT" },
+      "timeout_seconds": 20
+    }
+  ]
+}
