@@ -6,7 +6,14 @@ import {
   buildDiscoveredDevices,
   discoverUpses,
   publishUpsStates,
+  resetRefreshSchedule,
   testNutConnection,
 } from './ups.js';
 
-export { buildDiscoveredDevices, discoverUpses, publishUpsStates, testNutConnection };
+export {
+  buildDiscoveredDevices,
+  discoverUpses,
+  publishUpsStates,
+  resetRefreshSchedule,
+  testNutConnection,
+};

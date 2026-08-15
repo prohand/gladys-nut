@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createFakeGladys } from './helpers/fakeGladys.js';
-import { buildDiscoveredDevices, buildUpsDevice, buildUpsStates } from '../src/devices/ups.js';
+import {
+  buildDiscoveredDevices,
+  buildUpsDevice,
+  buildUpsStates,
+  CORE_POLL_FREQUENCIES,
+  corePollFrequency,
+  isRefreshDue,
+  markRefreshed,
+  resetRefreshSchedule,
+} from '../src/devices/ups.js';
 
 const config = {
   servers: [],
@@ -46,7 +55,8 @@ test('builds a UPS device from variables reported by NUT', () => {
   const device = buildUpsDevice(gladys, config, discovered());
 
   assert.equal(device.name, 'APC Smart-UPS 1500 (nut-one.local)');
-  assert.equal(device.poll_frequency, 60000);
+  assert.equal(device.should_poll, true);
+  assert.equal(device.poll_frequency, CORE_POLL_FREQUENCIES.EVERY_MINUTE);
   assert.match(device.external_id, /^nut-ups:nut-one\.local-3493-main-ups$/);
   assert.equal(device.features.length, 12);
   assert.deepEqual(
@@ -64,6 +74,55 @@ test('builds a UPS device from variables reported by NUT', () => {
       keep_history: true,
     },
   );
+});
+
+test('bounds every published feature, as Gladys rejects a null min or max', () => {
+  const gladys = createFakeGladys();
+  const device = buildUpsDevice(gladys, config, discovered());
+
+  for (const feature of device.features) {
+    assert.ok(
+      Number.isFinite(feature.min),
+      `${feature.name} must declare a numeric min, got ${feature.min}`,
+    );
+    assert.ok(
+      Number.isFinite(feature.max),
+      `${feature.name} must declare a numeric max, got ${feature.max}`,
+    );
+    assert.ok(feature.min < feature.max, `${feature.name} must declare min lower than max`);
+  }
+});
+
+test('registers the device on a polling frequency Gladys accepts', () => {
+  const gladys = createFakeGladys();
+  const slow = buildUpsDevice(gladys, { ...config, poll_frequency: 3600 }, discovered());
+  const fast = buildUpsDevice(gladys, { ...config, poll_frequency: 30 }, discovered());
+
+  assert.equal(slow.poll_frequency, CORE_POLL_FREQUENCIES.EVERY_MINUTE);
+  assert.equal(fast.poll_frequency, CORE_POLL_FREQUENCIES.EVERY_30_SECONDS);
+  assert.equal(corePollFrequency(45), CORE_POLL_FREQUENCIES.EVERY_MINUTE);
+  for (const frequency of Object.values(CORE_POLL_FREQUENCIES)) {
+    // Gladys Core only stores the frequencies of its own DEVICE_POLL_FREQUENCIES enum
+    assert.ok([1000, 2000, 10000, 15000, 30000, 60000].includes(frequency));
+  }
+});
+
+test('reads the NUT server only once per configured refresh interval', () => {
+  const externalId = 'nut-ups:nut-one.local-3493-main-ups';
+  const hourly = { ...config, poll_frequency: 3600 };
+  resetRefreshSchedule();
+
+  assert.equal(isRefreshDue(hourly, externalId, 0), true);
+  markRefreshed(externalId, 0);
+  assert.equal(isRefreshDue(hourly, externalId, 60 * 1000), false);
+  assert.equal(isRefreshDue(hourly, externalId, 3500 * 1000), false);
+  // due on the core tick closest to the configured interval (3600s - 60s / 2)
+  assert.equal(isRefreshDue(hourly, externalId, 3570 * 1000), true);
+  // a core tick landing a few milliseconds early must not skip a whole cycle
+  assert.equal(isRefreshDue({ ...config, poll_frequency: 60 }, externalId, 59_990), true);
+
+  resetRefreshSchedule();
+  assert.equal(isRefreshDue(hourly, externalId, 60 * 1000), true);
 });
 
 test('does not create text-only NUT sensors in the discovery payload', () => {

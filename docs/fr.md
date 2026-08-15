@@ -20,7 +20,7 @@ Par défaut, `upsd` écoute en TCP sur le port **3493**. Vérifiez également qu
 2. Dans l’onglet **Configuration**, renseignez le premier serveur `upsd` ; son hôte est obligatoire.
 3. Ajoutez si nécessaire jusqu’à quatre serveurs supplémentaires dans les emplacements optionnels.
 4. Pour chaque serveur, laissez le port à `3493` sauf si votre installation utilise un autre port. Renseignez aussi les identifiants NUT si une authentification est requise.
-5. Choisissez l’intervalle de rafraîchissement. La valeur par défaut de 60 secondes convient à la plupart des installations.
+5. Choisissez l’intervalle de rafraîchissement. La valeur par défaut de 60 secondes convient à la plupart des installations. Gladys interroge les appareils au maximum une fois par minute : un intervalle plus long est appliqué au tick de scrutation le plus proche.
 6. Enregistrez, puis utilisez **Tester les connexions NUT**.
 
 Une fois la connexion validée, Gladys découvre tous les onduleurs retournés par le serveur NUT. Chaque onduleur apparaît comme un appareil distinct dans la découverte Gladys. Dans l’onglet **Découverte**, cliquez sur **Ajouter** pour chaque onduleur que vous souhaitez intégrer : vous pouvez en ajouter plusieurs, indépendamment les uns des autres. La liste est reconstruite à chaque scan à partir de la commande NUT `LIST UPS`.
@@ -40,12 +40,14 @@ Les mesures sont publiées uniquement lorsqu’elles sont numériques et effecti
 
 ## Dépannage
 
-| Symptôme                             | Vérifications recommandées                                                                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Aucun onduleur détecté               | Vérifiez chaque hôte, port, pare-feu et la présence d’au moins un onduleur dans chaque `ups.conf`.                  |
-| Erreur d’accès ou d’authentification | Vérifiez les ACL dans `upsd.conf` et les identifiants définis dans `upsd.users`.                                    |
-| Certaines mesures manquent           | Exécutez `upsc <nom>@<serveur>` ; seules les variables retournées par votre pilote peuvent être créées dans Gladys. |
-| Données obsolètes                    | Vérifiez que le pilote NUT communique encore avec le matériel et consultez les logs `upsd`.                         |
+| Symptôme                                          | Vérifications recommandées                                                                                                                    |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Aucun onduleur détecté                            | Vérifiez chaque hôte, port, pare-feu et la présence d’au moins un onduleur dans chaque `ups.conf`.                                            |
+| Erreur d’accès ou d’authentification              | Vérifiez les ACL dans `upsd.conf` et les identifiants définis dans `upsd.users`.                                                              |
+| Certaines mesures manquent                        | Exécutez `upsc <nom>@<serveur>` ; seules les variables retournées par votre pilote peuvent être créées dans Gladys.                           |
+| Données obsolètes                                 | Vérifiez que le pilote NUT communique encore avec le matériel et consultez les logs `upsd`.                                                   |
+| Ajout refusé : « appareil incomplet ou invalide » | Mettez à jour l’intégration. Ce refus (HTTP 422) venait de fonctionnalités publiées sans bornes `min` et `max`, désormais toujours déclarées. |
+| Valeurs figées après l’ajout                      | Mettez à jour l’intégration : les appareils sont désormais publiés avec la scrutation périodique activée.                                     |
 
 Pour obtenir les détails de l’erreur, ouvrez les journaux de l’intégration dans Gladys. Vous pouvez également régler `LOG_LEVEL=debug` pour disposer de logs plus détaillés.
 

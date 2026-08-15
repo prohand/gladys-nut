@@ -19,6 +19,13 @@ import { getNutSnapshot } from '../nut/client.js';
 const DEVICE_TYPE = 'nut-ups';
 const logger = createLogger({ name: DEVICE_TYPE });
 
+// Gladys Core stores `min` and `max` as NOT NULL columns of t_device_feature:
+// a feature published without them is accepted in the discovery list but
+// rejected when the user adds the device, with an HTTP 422 ("min cannot be
+// null"). Every definition below therefore declares the full envelope of its
+// NUT variable. Those bounds stay descriptive — they size the gauges and the
+// charts, Gladys never clamps nor rejects a state outside of them — so they
+// are deliberately generous enough to cover large three-phase units.
 const NUMERIC_VARIABLES = [
   {
     variable: 'battery.charge',
@@ -38,6 +45,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.DURATION.INTEGER,
     unit: DEVICE_FEATURE_UNITS.SECONDS,
     min: 0,
+    max: 86400,
   },
   {
     variable: 'ups.load',
@@ -57,6 +65,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.VOLTAGE,
     unit: DEVICE_FEATURE_UNITS.VOLT,
     min: 0,
+    max: 600,
   },
   {
     variable: 'output.voltage',
@@ -66,6 +75,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.VOLTAGE,
     unit: DEVICE_FEATURE_UNITS.VOLT,
     min: 0,
+    max: 600,
   },
   {
     variable: 'battery.voltage',
@@ -75,6 +85,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.VOLTAGE,
     unit: DEVICE_FEATURE_UNITS.VOLT,
     min: 0,
+    max: 600,
   },
   {
     variable: 'input.current',
@@ -84,6 +95,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.CURRENT,
     unit: DEVICE_FEATURE_UNITS.AMPERE,
     min: 0,
+    max: 200,
   },
   {
     variable: 'output.current',
@@ -93,6 +105,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.CURRENT,
     unit: DEVICE_FEATURE_UNITS.AMPERE,
     min: 0,
+    max: 200,
   },
   {
     variable: 'ups.realpower',
@@ -102,6 +115,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.POWER,
     unit: DEVICE_FEATURE_UNITS.WATT,
     min: 0,
+    max: 100000,
   },
   {
     variable: 'ups.power',
@@ -111,6 +125,7 @@ const NUMERIC_VARIABLES = [
     type: DEVICE_FEATURE_TYPES.SENSOR.DECIMAL,
     unit: DEVICE_FEATURE_UNITS.VOLT_AMPERE,
     min: 0,
+    max: 100000,
   },
   {
     variable: 'ups.temperature',
@@ -119,6 +134,8 @@ const NUMERIC_VARIABLES = [
     category: DEVICE_FEATURE_CATEGORIES.TEMPERATURE_SENSOR,
     type: DEVICE_FEATURE_TYPES.SENSOR.DECIMAL,
     unit: DEVICE_FEATURE_UNITS.CELSIUS,
+    min: -40,
+    max: 150,
   },
   {
     variable: 'battery.temperature',
@@ -127,8 +144,76 @@ const NUMERIC_VARIABLES = [
     category: DEVICE_FEATURE_CATEGORIES.TEMPERATURE_SENSOR,
     type: DEVICE_FEATURE_TYPES.SENSOR.DECIMAL,
     unit: DEVICE_FEATURE_UNITS.CELSIUS,
+    min: -40,
+    max: 150,
   },
 ];
+
+// Gladys polls devices on a fixed set of frequencies (DEVICE_POLL_FREQUENCIES
+// in Gladys Core), the slowest being one minute: publishing any other value
+// makes the core reject the whole discovery payload. The user-facing refresh
+// interval goes up to one hour, so each device registers on the closest core
+// frequency and the integration itself ignores the polls that fall inside the
+// configured interval (see isRefreshDue).
+export const CORE_POLL_FREQUENCIES = Object.freeze({
+  EVERY_30_SECONDS: 30 * 1000,
+  EVERY_MINUTE: 60 * 1000,
+});
+
+// Timestamp of the last NUT read published for a device external_id.
+const lastRefreshAt = new Map();
+
+/**
+ * Core polling frequency a device must register on to be refreshed at least as
+ * often as the configured interval.
+ * @param {number} pollFrequencySeconds - The configured refresh interval.
+ * @returns {number} A frequency accepted by Gladys Core, in milliseconds.
+ */
+export function corePollFrequency(pollFrequencySeconds) {
+  return pollFrequencySeconds <= 30
+    ? CORE_POLL_FREQUENCIES.EVERY_30_SECONDS
+    : CORE_POLL_FREQUENCIES.EVERY_MINUTE;
+}
+
+/**
+ * Whether a core poll must actually query the NUT server, or belongs to the
+ * configured interval and has to be ignored.
+ * @param {object} config - The normalized integration configuration.
+ * @param {string} deviceExternalId - The polled device external_id.
+ * @param {number} [now] - The current timestamp, injectable for tests.
+ * @returns {boolean} True when the UPS has to be read again.
+ */
+export function isRefreshDue(config, deviceExternalId, now = Date.now()) {
+  const last = lastRefreshAt.get(deviceExternalId);
+  if (last === undefined) {
+    return true;
+  }
+  // The core ticks on its own clock, so a poll routinely lands a few
+  // milliseconds short of the configured interval. Comparing against the raw
+  // interval would then skip a whole cycle: a refresh is due as soon as it is
+  // closer to the configured interval than to the next core tick.
+  const tick = corePollFrequency(config.poll_frequency);
+  return now - last >= config.poll_frequency * 1000 - tick / 2;
+}
+
+/**
+ * Record that the UPS behind a device external_id has just been read.
+ * @param {string} deviceExternalId - The refreshed device external_id.
+ * @param {number} [now] - The current timestamp, injectable for tests.
+ * @returns {void}
+ */
+export function markRefreshed(deviceExternalId, now = Date.now()) {
+  lastRefreshAt.set(deviceExternalId, now);
+}
+
+/**
+ * Drop every recorded refresh, so the next poll of each device reads its NUT
+ * server again. Called when the configuration changes.
+ * @returns {void}
+ */
+export function resetRefreshSchedule() {
+  lastRefreshAt.clear();
+}
 
 function platformId(server, upsName) {
   return `${encodeURIComponent(server.host)}-${server.port}-${encodeURIComponent(upsName)}`;
@@ -162,12 +247,19 @@ export function buildUpsDevice(gladys, config, discovered) {
   const numericFeatures = NUMERIC_VARIABLES.filter(
     (definition) => valueAsNumber(snapshot.variables, definition.variable) !== undefined,
   ).map((definition) => featureFromDefinition(ids, definition));
+  if (numericFeatures.length === 0) {
+    logger.warn(
+      `The UPS ${snapshot.name} on ${server.host}:${server.port} reports no numeric variable: it is published without any feature.`,
+    );
+  }
   return {
     name: `${name} (${server.host})`,
     external_id: ids.device,
-    // Gladys Core expects polling frequencies in milliseconds; the manifest and
-    // user-facing configuration deliberately stay in seconds.
-    poll_frequency: config.poll_frequency * 1000,
+    // Gladys never polls a device that does not ask for it: without
+    // should_poll, the device is created but its values stay frozen on the
+    // ones read at discovery time.
+    should_poll: true,
+    poll_frequency: corePollFrequency(config.poll_frequency),
     // Text features are intentionally not published: older Gladys Core releases
     // reject the `text` category with HTTP 422 during discovery validation.
     features: numericFeatures,
@@ -216,6 +308,9 @@ export async function discoverUpses(config) {
 }
 
 export async function publishUpsStates(gladys, config, deviceExternalId) {
+  if (!isRefreshDue(config, deviceExternalId)) {
+    return null;
+  }
   const discovered = await discoverUpses(config);
   const item = discovered.find(
     ({ server, snapshot }) =>
@@ -230,6 +325,9 @@ export async function publishUpsStates(gladys, config, deviceExternalId) {
   if (states.length > 0) {
     await gladys.publishStates(states);
   }
+  // Recorded once the read succeeded: a failed poll is retried on the next
+  // core tick instead of waiting for a whole configured interval.
+  markRefreshed(deviceExternalId);
   return item;
 }
 
