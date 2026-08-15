@@ -196,7 +196,9 @@ export function buildUpsDevice(gladys, config, snapshot) {
   return {
     name,
     external_id: ids.device,
-    poll_frequency: config.poll_frequency,
+    // Gladys Core expects polling frequencies in milliseconds; the manifest and
+    // user-facing configuration deliberately stay in seconds.
+    poll_frequency: config.poll_frequency * 1000,
     features: [...numericFeatures, ...textFeatures],
   };
 }

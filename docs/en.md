@@ -23,7 +23,7 @@ By default, `upsd` listens on TCP port **3493**. Ensure that both network rules 
 5. Choose a refresh interval. The default value of 60 seconds is appropriate for most installations.
 6. Save, then use **Test NUT connection**.
 
-Once the connection succeeds, Gladys discovers every UPS returned by the NUT server. Each UPS appears as a distinct Gladys device in discovery.
+Once the connection succeeds, Gladys discovers every UPS returned by the NUT server. Each UPS appears as a distinct Gladys device in discovery. In the **Discovery** tab, click **Add** for every UPS you want to integrate: you can add several devices independently. The list is rebuilt on each scan from the NUT `LIST UPS` command.
 
 ## Available information
 

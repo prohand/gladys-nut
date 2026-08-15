@@ -41,7 +41,7 @@ test('builds a UPS device from variables reported by NUT', () => {
   const device = buildUpsDevice(gladys, config, snapshot());
 
   assert.equal(device.name, 'APC Smart-UPS 1500');
-  assert.equal(device.poll_frequency, 60);
+  assert.equal(device.poll_frequency, 60000);
   assert.match(device.external_id, /^nut-ups:nut\.local-3493-main-ups$/);
   assert.equal(device.features.length, 15);
   assert.deepEqual(

@@ -23,7 +23,7 @@ Par défaut, `upsd` écoute en TCP sur le port **3493**. Vérifiez également qu
 5. Choisissez l’intervalle de rafraîchissement. La valeur par défaut de 60 secondes convient à la plupart des installations.
 6. Enregistrez, puis utilisez **Tester la connexion NUT**.
 
-Une fois la connexion validée, Gladys découvre tous les onduleurs retournés par le serveur NUT. Chaque onduleur apparaît comme un appareil distinct dans la découverte Gladys.
+Une fois la connexion validée, Gladys découvre tous les onduleurs retournés par le serveur NUT. Chaque onduleur apparaît comme un appareil distinct dans la découverte Gladys. Dans l’onglet **Découverte**, cliquez sur **Ajouter** pour chaque onduleur que vous souhaitez intégrer : vous pouvez en ajouter plusieurs, indépendamment les uns des autres. La liste est reconstruite à chaque scan à partir de la commande NUT `LIST UPS`.
 
 ## Informations disponibles
 
