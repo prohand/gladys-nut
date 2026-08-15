@@ -93,6 +93,48 @@ test('bounds every published feature, as Gladys rejects a null min or max', () =
   }
 });
 
+// The Gladys front-end resolves both the icon (DeviceFeatureCategoriesIcon in
+// front/src/utils/consts.js) and the label (deviceFeatureCategory.<category>.<type>
+// in its translation files) from the category/type PAIR, not from either alone.
+// A pair missing from those two maps is accepted by the server but drawn as an
+// empty chip on the device page, so only pairs known to both are published here.
+const RENDERABLE_CATEGORY_TYPES = new Set([
+  'battery/integer',
+  'duration/integer',
+  'energy-sensor/power',
+  'energy-sensor/voltage',
+  'energy-sensor/current',
+  'temperature-sensor/decimal',
+  'unknown/unknown',
+]);
+
+test('publishes only category/type pairs the Gladys front-end can render', () => {
+  const gladys = createFakeGladys();
+  const device = buildUpsDevice(gladys, config, discovered());
+
+  for (const feature of device.features) {
+    const pair = `${feature.category}/${feature.type}`;
+    assert.ok(
+      RENDERABLE_CATEGORY_TYPES.has(pair),
+      `${feature.name} publishes ${pair}, a pair with no icon nor label in the Gladys front-end`,
+    );
+  }
+});
+
+test('gives the load and the apparent power a renderable category', () => {
+  const gladys = createFakeGladys();
+  const device = buildUpsDevice(gladys, config, discovered());
+  const load = device.features.find((feature) => feature.name === 'Load');
+  const apparentPower = device.features.find((feature) => feature.name === 'Apparent power');
+
+  assert.equal(load.category, 'unknown');
+  assert.equal(load.type, 'unknown');
+  assert.equal(load.unit, 'percent');
+  assert.equal(apparentPower.category, 'energy-sensor');
+  assert.equal(apparentPower.type, 'power');
+  assert.equal(apparentPower.unit, 'volt-ampere');
+});
+
 test('registers the device on a polling frequency Gladys accepts', () => {
   const gladys = createFakeGladys();
   const slow = buildUpsDevice(gladys, { ...config, poll_frequency: 3600 }, discovered());

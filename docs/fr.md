@@ -40,14 +40,15 @@ Les mesures sont publiées uniquement lorsqu’elles sont numériques et effecti
 
 ## Dépannage
 
-| Symptôme                                          | Vérifications recommandées                                                                                                                    |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Aucun onduleur détecté                            | Vérifiez chaque hôte, port, pare-feu et la présence d’au moins un onduleur dans chaque `ups.conf`.                                            |
-| Erreur d’accès ou d’authentification              | Vérifiez les ACL dans `upsd.conf` et les identifiants définis dans `upsd.users`.                                                              |
-| Certaines mesures manquent                        | Exécutez `upsc <nom>@<serveur>` ; seules les variables retournées par votre pilote peuvent être créées dans Gladys.                           |
-| Données obsolètes                                 | Vérifiez que le pilote NUT communique encore avec le matériel et consultez les logs `upsd`.                                                   |
-| Ajout refusé : « appareil incomplet ou invalide » | Mettez à jour l’intégration. Ce refus (HTTP 422) venait de fonctionnalités publiées sans bornes `min` et `max`, désormais toujours déclarées. |
-| Valeurs figées après l’ajout                      | Mettez à jour l’intégration : les appareils sont désormais publiés avec la scrutation périodique activée.                                     |
+| Symptôme                                          | Vérifications recommandées                                                                                                                                                                                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Aucun onduleur détecté                            | Vérifiez chaque hôte, port, pare-feu et la présence d’au moins un onduleur dans chaque `ups.conf`.                                                                                                                                                                     |
+| Erreur d’accès ou d’authentification              | Vérifiez les ACL dans `upsd.conf` et les identifiants définis dans `upsd.users`.                                                                                                                                                                                       |
+| Certaines mesures manquent                        | Exécutez `upsc <nom>@<serveur>` ; seules les variables retournées par votre pilote peuvent être créées dans Gladys.                                                                                                                                                    |
+| Données obsolètes                                 | Vérifiez que le pilote NUT communique encore avec le matériel et consultez les logs `upsd`.                                                                                                                                                                            |
+| Ajout refusé : « appareil incomplet ou invalide » | Mettez à jour l’intégration. Ce refus (HTTP 422) venait de fonctionnalités publiées sans bornes `min` et `max`, désormais toujours déclarées.                                                                                                                          |
+| Valeurs figées après l’ajout                      | Mettez à jour l’intégration : les appareils sont désormais publiés avec la scrutation périodique activée.                                                                                                                                                              |
+| Fonctionnalités affichées sans nom ni icône       | Mettez à jour l’intégration, puis ré-ajoutez l’onduleur depuis l’onglet **Découverte** pour mettre à jour ses fonctionnalités existantes : la charge et la puissance apparente étaient publiées sur un couple catégorie/type que le front Gladys ne sait pas dessiner. |
 
 Pour obtenir les détails de l’erreur, ouvrez les journaux de l’intégration dans Gladys. Vous pouvez également régler `LOG_LEVEL=debug` pour disposer de logs plus détaillés.
 

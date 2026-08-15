@@ -51,8 +51,13 @@ const NUMERIC_VARIABLES = [
     variable: 'ups.load',
     key: 'load',
     name: 'Load',
-    category: DEVICE_FEATURE_CATEGORIES.ENERGY_SENSOR,
-    type: DEVICE_FEATURE_TYPES.SENSOR.DECIMAL,
+    // Gladys has no category for a generic percentage of a rated capacity, and
+    // `energy-sensor` has no `decimal` type: that pair has neither icon nor
+    // label in the front-end, which displayed the feature as a blank chip. The
+    // `unknown/unknown` pair is the documented catch-all and renders properly;
+    // the feature name and its percent unit carry the meaning.
+    category: DEVICE_FEATURE_CATEGORIES.UNKNOWN,
+    type: DEVICE_FEATURE_TYPES.UNKNOWN.UNKNOWN,
     unit: DEVICE_FEATURE_UNITS.PERCENT,
     min: 0,
     max: 100,
@@ -121,8 +126,12 @@ const NUMERIC_VARIABLES = [
     variable: 'ups.power',
     key: 'apparent-power',
     name: 'Apparent power',
-    category: DEVICE_FEATURE_CATEGORIES.UNKNOWN,
-    type: DEVICE_FEATURE_TYPES.SENSOR.DECIMAL,
+    // Apparent power is a power reading, so it belongs to `energy-sensor/power`
+    // like ups.realpower: only the unit (VA instead of W) and the feature name
+    // separate them. The previous `unknown/decimal` pair matched no front-end
+    // icon nor label and left an empty chip on the device page.
+    category: DEVICE_FEATURE_CATEGORIES.ENERGY_SENSOR,
+    type: DEVICE_FEATURE_TYPES.ENERGY_SENSOR.POWER,
     unit: DEVICE_FEATURE_UNITS.VOLT_AMPERE,
     min: 0,
     max: 100000,
