@@ -3,8 +3,8 @@
   "type": "device",
   "name": "Network UPS Tools (NUT)",
   "description": {
-    "en": "Monitor uninterruptible power supplies exposed by up to five Network UPS Tools servers.",
-    "fr": "Supervisez les onduleurs exposés par jusqu’à cinq serveurs Network UPS Tools."
+    "en": "Track the status, load and remaining battery runtime of your UPS devices from your Network UPS Tools servers.",
+    "fr": "Suivez en temps réel l’état, la charge et l’autonomie restante de vos onduleurs depuis vos serveurs Network UPS Tools."
   },
   "version": "1.0.4",
   "docker_image": "ghcr.io/prohand/gladys-nut:1.0.4",
