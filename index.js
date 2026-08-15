@@ -8,6 +8,7 @@ import {
   buildDiscoveredDevices,
   discoverUpses,
   publishUpsStates,
+  resetRefreshSchedule,
   testNutConnection,
 } from './src/devices/index.js';
 
@@ -42,8 +43,13 @@ gladys.onScanRequest(async () => {
 
 gladys.onPoll(async (device) => {
   try {
-    await publishUpsStates(gladys, config, device.external_id);
-    await gladys.setConnectionStatus(true);
+    // Gladys polls at most every minute; publishUpsStates returns null when
+    // the poll falls inside the configured refresh interval and no NUT server
+    // was queried, leaving the connection status untouched.
+    const refreshed = await publishUpsStates(gladys, config, device.external_id);
+    if (refreshed) {
+      await gladys.setConnectionStatus(true);
+    }
   } catch (error) {
     await reportUnavailable(error);
     throw error;
@@ -64,6 +70,9 @@ gladys.onAction('test_connection', async () => {
 gladys.onConfigUpdated(async (rawConfig) => {
   try {
     config = normalizeConfig(rawConfig);
+    // The servers and the refresh interval may both have changed: every device
+    // is due for a fresh read on its next poll.
+    resetRefreshSchedule();
     await refreshDiscovery();
     await gladys.setConnectionStatus(true);
   } catch (error) {
