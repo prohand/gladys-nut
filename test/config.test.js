@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { DEFAULT_CONFIG, normalizeConfig } from '../src/config.js';
+import {
+  DEFAULT_CONFIG,
+  MAX_POLL_FREQUENCY,
+  MIN_POLL_FREQUENCY,
+  normalizeConfig,
+} from '../src/config.js';
 
 test('normalizes multiple NUT server slots', () => {
   const config = normalizeConfig({
@@ -76,11 +81,25 @@ test('rejects duplicated server identities', () => {
   );
 });
 
-test('rejects an unsupported polling interval', () => {
-  assert.throws(
-    () => normalizeConfig({ server_1_host: 'nut.local', poll_frequency: 5 }),
-    /between 30 and 3600 seconds/,
-  );
+test('raises a polling interval that would flood the Gladys history', () => {
+  const interval = (poll_frequency) =>
+    normalizeConfig({ server_1_host: 'nut.local', poll_frequency }).poll_frequency;
+
+  // Sub-minute intervals doubled the number of history rows without adding
+  // anything readable on a UPS: one minute is now the floor. Installations
+  // saved before that floor existed keep working, on the floor.
+  assert.equal(interval(5), MIN_POLL_FREQUENCY);
+  assert.equal(interval(30), MIN_POLL_FREQUENCY);
+  assert.equal(interval(60), 60);
+  assert.equal(interval(3600), 3600);
+  assert.equal(interval(999999), MAX_POLL_FREQUENCY);
+});
+
+test('defaults to a refresh interval gentle on the Gladys database', () => {
+  const config = normalizeConfig({ server_1_host: 'nut.local' });
+
+  assert.equal(config.poll_frequency, DEFAULT_CONFIG.poll_frequency);
+  assert.ok(config.poll_frequency >= 300, 'the default interval must stay at five minutes or more');
 });
 
 test('requires a password with a NUT username', () => {
