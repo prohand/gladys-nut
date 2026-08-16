@@ -5,16 +5,18 @@ import {
   buildDiscoveredDevices,
   buildUpsDevice,
   buildUpsStates,
-  CORE_POLL_FREQUENCIES,
-  corePollFrequency,
+  CORE_POLL_FREQUENCY,
   isRefreshDue,
+  isStatePublishable,
   markRefreshed,
+  markStatePublished,
   resetRefreshSchedule,
+  STATE_HEARTBEAT,
 } from '../src/devices/ups.js';
 
 const config = {
   servers: [],
-  poll_frequency: 60,
+  poll_frequency: 300,
 };
 
 const serverOne = { id: 'server-1', host: 'nut-one.local', port: 3493 };
@@ -56,7 +58,7 @@ test('builds a UPS device from variables reported by NUT', () => {
 
   assert.equal(device.name, 'APC Smart-UPS 1500 (nut-one.local)');
   assert.equal(device.should_poll, true);
-  assert.equal(device.poll_frequency, CORE_POLL_FREQUENCIES.EVERY_MINUTE);
+  assert.equal(device.poll_frequency, CORE_POLL_FREQUENCY);
   assert.match(device.external_id, /^nut-ups:nut-one\.local-3493-main-ups$/);
   assert.equal(device.features.length, 12);
   assert.deepEqual(
@@ -135,18 +137,17 @@ test('gives the load and the apparent power a renderable category', () => {
   assert.equal(apparentPower.unit, 'volt-ampere');
 });
 
-test('registers the device on a polling frequency Gladys accepts', () => {
+test('registers every device on the slowest polling frequency Gladys accepts', () => {
   const gladys = createFakeGladys();
   const slow = buildUpsDevice(gladys, { ...config, poll_frequency: 3600 }, discovered());
-  const fast = buildUpsDevice(gladys, { ...config, poll_frequency: 30 }, discovered());
+  const fast = buildUpsDevice(gladys, { ...config, poll_frequency: 60 }, discovered());
 
-  assert.equal(slow.poll_frequency, CORE_POLL_FREQUENCIES.EVERY_MINUTE);
-  assert.equal(fast.poll_frequency, CORE_POLL_FREQUENCIES.EVERY_30_SECONDS);
-  assert.equal(corePollFrequency(45), CORE_POLL_FREQUENCIES.EVERY_MINUTE);
-  for (const frequency of Object.values(CORE_POLL_FREQUENCIES)) {
-    // Gladys Core only stores the frequencies of its own DEVICE_POLL_FREQUENCIES enum
-    assert.ok([1000, 2000, 10000, 15000, 30000, 60000].includes(frequency));
-  }
+  // The faster core ticks would double the number of history rows written into
+  // the Gladys database, so no configured interval ever selects one.
+  assert.equal(slow.poll_frequency, CORE_POLL_FREQUENCY);
+  assert.equal(fast.poll_frequency, CORE_POLL_FREQUENCY);
+  // Gladys Core only stores the frequencies of its own DEVICE_POLL_FREQUENCIES enum
+  assert.ok([1000, 2000, 10000, 15000, 30000, 60000].includes(CORE_POLL_FREQUENCY));
 });
 
 test('reads the NUT server only once per configured refresh interval', () => {
@@ -162,9 +163,33 @@ test('reads the NUT server only once per configured refresh interval', () => {
   assert.equal(isRefreshDue(hourly, externalId, 3570 * 1000), true);
   // a core tick landing a few milliseconds early must not skip a whole cycle
   assert.equal(isRefreshDue({ ...config, poll_frequency: 60 }, externalId, 59_990), true);
+  // the default interval skips the core ticks that fall inside it
+  assert.equal(isRefreshDue(config, externalId, 120 * 1000), false);
+  assert.equal(isRefreshDue(config, externalId, 270 * 1000), true);
 
   resetRefreshSchedule();
   assert.equal(isRefreshDue(hourly, externalId, 60 * 1000), true);
+});
+
+test('writes a history row only when the reading changed', () => {
+  const state = { device_feature_external_id: 'nut-ups:ups:battery-charge', state: 92 };
+  resetRefreshSchedule();
+
+  assert.equal(isStatePublishable(state, 0), true);
+  markStatePublished(state, 0);
+
+  // Same value on the next read: nothing new to store.
+  assert.equal(isStatePublishable({ ...state }, 60 * 1000), false);
+  // A different value is always published, however small the change.
+  assert.equal(isStatePublishable({ ...state, state: 91.5 }, 60 * 1000), true);
+  // An unchanged value is refreshed at least once per heartbeat, so the
+  // front-end never displays the feature as stale.
+  assert.equal(isStatePublishable({ ...state }, STATE_HEARTBEAT - 1), false);
+  assert.equal(isStatePublishable({ ...state }, STATE_HEARTBEAT), true);
+
+  // A configuration change republishes everything.
+  resetRefreshSchedule();
+  assert.equal(isStatePublishable({ ...state }, 60 * 1000), true);
 });
 
 test('does not create text-only NUT sensors in the discovery payload', () => {

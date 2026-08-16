@@ -19,9 +19,13 @@ Les valeurs sont actualisées via `LIST VAR <upsname>` à la fréquence configur
 
 ## Configuration dans Gladys
 
-Dans la page de configuration de l’intégration, configurez jusqu’à **cinq serveurs `upsd`**. Le premier serveur est obligatoire ; les quatre suivants sont facultatifs. Pour chaque serveur, renseignez l’hôte, le port TCP — **3493** par défaut — et, si nécessaire, les identifiants NUT. Choisissez ensuite un intervalle de rafraîchissement compris entre 30 et 3 600 secondes. Tous les onduleurs de tous les serveurs configurés sont découverts séparément.
+Dans la page de configuration de l’intégration, configurez jusqu’à **cinq serveurs `upsd`**. Le premier serveur est obligatoire ; les quatre suivants sont facultatifs. Pour chaque serveur, renseignez l’hôte, le port TCP — **3493** par défaut — et, si nécessaire, les identifiants NUT. Choisissez ensuite un intervalle de rafraîchissement compris entre 60 et 86 400 secondes, **300 secondes par défaut**. Tous les onduleurs de tous les serveurs configurés sont découverts séparément.
 
-Gladys ne sait interroger un appareil qu’aux fréquences de son propre planificateur, la plus lente étant d’une minute. Chaque onduleur est donc enregistré sur la fréquence de scrutation la plus proche — 30 secondes ou 1 minute — et l’intégration ignore elle-même les scrutations qui tombent à l’intérieur de l’intervalle configuré. Un intervalle plus long qu’une minute est appliqué au tick de scrutation le plus proche.
+Gladys ne sait interroger un appareil qu’aux fréquences de son propre planificateur, la plus lente étant d’une minute. Chaque onduleur est donc enregistré sur cette fréquence d’une minute, et l’intégration ignore elle-même les scrutations qui tombent à l’intérieur de l’intervalle configuré : l’intervalle est appliqué au tick de scrutation le plus proche.
+
+### Volume de données écrit dans Gladys
+
+Chaque mesure publiée est une ligne d’historique dans la base de Gladys, et un onduleur expose jusqu’à douze mesures. Un intervalle d’une minute écrit donc environ 17 000 lignes par jour et par onduleur, pour des valeurs qui bougent peu : l’intervalle par défaut de cinq minutes divise ce volume par cinq, et l’intégration n’écrit que les mesures qui ont réellement changé depuis la publication précédente. Une valeur stable est tout de même republiée au moins une fois par heure, afin que Gladys ne l’affiche pas comme obsolète. Ne descendez sous les cinq minutes que si vous avez besoin de mesures plus fines — par exemple pour suivre l’autonomie pendant une coupure — et remontez l’intervalle si la base grossit trop.
 
 Le bouton **Tester la connexion NUT** vérifie l’accès au serveur et affiche le nombre d’onduleurs détectés. En cas d’échec, l’état de connexion de l’intégration explique l’erreur remontée par le serveur ou le réseau.
 
@@ -56,7 +60,7 @@ LOG_LEVEL=debug \
 npm start
 ```
 
-Les tests unitaires couvrent la validation de configuration, l’analyse des réponses du protocole NUT, l’authentification facultative, la découverte multi-onduleurs, la validité du payload de découverte (bornes des fonctionnalités, fréquence de scrutation) et le mapping des mesures vers Gladys.
+Les tests unitaires couvrent la validation de configuration, l’analyse des réponses du protocole NUT, l’authentification facultative, la découverte multi-onduleurs, la validité du payload de découverte (bornes des fonctionnalités, fréquence de scrutation), le filtrage des mesures inchangées et le mapping des mesures vers Gladys.
 
 ## Validation et publication
 

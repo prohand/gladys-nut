@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { DEFAULT_CONFIG } from '../src/config.js';
+import { DEFAULT_CONFIG, MAX_POLL_FREQUENCY, MIN_POLL_FREQUENCY } from '../src/config.js';
 
 const manifest = JSON.parse(
   await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
@@ -39,6 +39,18 @@ test('respects the store admission limits on the catalog identity', () => {
 test('keeps shared configuration defaults aligned with runtime defaults', () => {
   const pollFrequency = manifest.config_schema.find((field) => field.key === 'poll_frequency');
   assert.equal(DEFAULT_CONFIG.poll_frequency, pollFrequency.default);
+});
+
+test('offers no refresh interval that would flood the Gladys history', () => {
+  // The form is the only guard the user sees: a bound looser than the runtime
+  // one would let the interface propose a value normalizeConfig then rejects.
+  const pollFrequency = manifest.config_schema.find((field) => field.key === 'poll_frequency');
+
+  assert.equal(pollFrequency.min, MIN_POLL_FREQUENCY);
+  assert.equal(pollFrequency.max, MAX_POLL_FREQUENCY);
+  assert.ok(pollFrequency.min >= 60, 'sub-minute polling writes far too many history rows');
+  assert.ok(pollFrequency.default >= pollFrequency.min);
+  assert.ok(pollFrequency.default <= pollFrequency.max);
 });
 
 test('protects all optional passwords and exposes the connection test action', () => {

@@ -160,29 +160,24 @@ const NUMERIC_VARIABLES = [
 
 // Gladys polls devices on a fixed set of frequencies (DEVICE_POLL_FREQUENCIES
 // in Gladys Core), the slowest being one minute: publishing any other value
-// makes the core reject the whole discovery payload. The user-facing refresh
-// interval goes up to one hour, so each device registers on the closest core
-// frequency and the integration itself ignores the polls that fall inside the
-// configured interval (see isRefreshDue).
-export const CORE_POLL_FREQUENCIES = Object.freeze({
-  EVERY_30_SECONDS: 30 * 1000,
-  EVERY_MINUTE: 60 * 1000,
-});
+// makes the core reject the whole discovery payload. Every device therefore
+// registers on that slowest tick, and the integration itself ignores the polls
+// that fall inside the configured interval (see isRefreshDue). The faster core
+// frequencies are deliberately never used: they would double the number of
+// history rows written into the Gladys database for readings that move slowly.
+export const CORE_POLL_FREQUENCY = 60 * 1000;
+
+// A published state that repeats the previous one is still a full row in the
+// Gladys history table. Unchanged values are therefore skipped, but not
+// forever: republishing at least once an hour keeps the device from looking
+// stale in the front-end and keeps the charts anchored over long flat periods.
+export const STATE_HEARTBEAT = 60 * 60 * 1000;
 
 // Timestamp of the last NUT read published for a device external_id.
 const lastRefreshAt = new Map();
 
-/**
- * Core polling frequency a device must register on to be refreshed at least as
- * often as the configured interval.
- * @param {number} pollFrequencySeconds - The configured refresh interval.
- * @returns {number} A frequency accepted by Gladys Core, in milliseconds.
- */
-export function corePollFrequency(pollFrequencySeconds) {
-  return pollFrequencySeconds <= 30
-    ? CORE_POLL_FREQUENCIES.EVERY_30_SECONDS
-    : CORE_POLL_FREQUENCIES.EVERY_MINUTE;
-}
+// Last state published for a feature external_id: { value, at }.
+const lastPublishedStates = new Map();
 
 /**
  * Whether a core poll must actually query the NUT server, or belongs to the
@@ -201,8 +196,32 @@ export function isRefreshDue(config, deviceExternalId, now = Date.now()) {
   // milliseconds short of the configured interval. Comparing against the raw
   // interval would then skip a whole cycle: a refresh is due as soon as it is
   // closer to the configured interval than to the next core tick.
-  const tick = corePollFrequency(config.poll_frequency);
-  return now - last >= config.poll_frequency * 1000 - tick / 2;
+  return now - last >= config.poll_frequency * 1000 - CORE_POLL_FREQUENCY / 2;
+}
+
+/**
+ * Whether a freshly read state is worth writing to the Gladys history, i.e.
+ * whether it carries something the previous published state does not.
+ * @param {object} state - A { device_feature_external_id, state } payload.
+ * @param {number} [now] - The current timestamp, injectable for tests.
+ * @returns {boolean} True when the state has to be published.
+ */
+export function isStatePublishable(state, now = Date.now()) {
+  const last = lastPublishedStates.get(state.device_feature_external_id);
+  if (last === undefined) {
+    return true;
+  }
+  return last.value !== state.state || now - last.at >= STATE_HEARTBEAT;
+}
+
+/**
+ * Record that a state has just been published for its feature.
+ * @param {object} state - A { device_feature_external_id, state } payload.
+ * @param {number} [now] - The current timestamp, injectable for tests.
+ * @returns {void}
+ */
+export function markStatePublished(state, now = Date.now()) {
+  lastPublishedStates.set(state.device_feature_external_id, { value: state.state, at: now });
 }
 
 /**
@@ -216,12 +235,14 @@ export function markRefreshed(deviceExternalId, now = Date.now()) {
 }
 
 /**
- * Drop every recorded refresh, so the next poll of each device reads its NUT
- * server again. Called when the configuration changes.
+ * Drop every recorded refresh and published state, so the next poll of each
+ * device reads its NUT server again and republishes everything it reports.
+ * Called when the configuration changes.
  * @returns {void}
  */
 export function resetRefreshSchedule() {
   lastRefreshAt.clear();
+  lastPublishedStates.clear();
 }
 
 function platformId(server, upsName) {
@@ -245,7 +266,7 @@ function featureFromDefinition(ids, definition) {
   };
 }
 
-export function buildUpsDevice(gladys, config, discovered) {
+export function buildUpsDevice(gladys, _config, discovered) {
   const { server, snapshot } = discovered;
   const ids = gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name));
   const manufacturer = snapshot.variables.get('device.mfr') ?? snapshot.variables.get('ups.mfr');
@@ -268,7 +289,7 @@ export function buildUpsDevice(gladys, config, discovered) {
     // should_poll, the device is created but its values stay frozen on the
     // ones read at discovery time.
     should_poll: true,
-    poll_frequency: corePollFrequency(config.poll_frequency),
+    poll_frequency: CORE_POLL_FREQUENCY,
     // Text features are intentionally not published: older Gladys Core releases
     // reject the `text` category with HTTP 422 during discovery validation.
     features: numericFeatures,
@@ -330,9 +351,18 @@ export async function publishUpsStates(gladys, config, deviceExternalId) {
     throw new Error(`The UPS for ${deviceExternalId} is no longer exposed by the NUT servers.`);
   }
 
-  const states = buildUpsStates(gladys, config, item);
+  // Only the readings that actually changed reach Gladys: a UPS idle on mains
+  // power reports the same charge, runtime and voltages for hours, and every
+  // repeat would be an extra history row for no information at all.
+  const now = Date.now();
+  const states = buildUpsStates(gladys, config, item).filter((state) =>
+    isStatePublishable(state, now),
+  );
   if (states.length > 0) {
     await gladys.publishStates(states);
+    for (const state of states) {
+      markStatePublished(state, now);
+    }
   }
   // Recorded once the read succeeded: a failed poll is retried on the next
   // core tick instead of waiting for a whole configured interval.
