@@ -7,6 +7,10 @@
 //   - publishCameraImage             -> record calls so tests can assert them
 //   - publishTransports              -> record calls so tests can assert them
 //   - setConnectionStatus            -> record calls so tests can assert them
+//   - publishSceneEvent              -> record calls so tests can assert them
+//   - requestWidgetRefresh           -> record calls so tests can assert them
+//   - onWidgetGet / onWidgetAction / onSceneAction -> keep the handlers so
+//     tests can call them as the SDK would
 // This lets us test the pure "wiring" logic (discovery payloads, dispatch)
 // without a running Gladys server or a real WebSocket.
 // -----------------------------------------------------------------------------
@@ -16,12 +20,18 @@ export function createFakeGladys() {
   const cameraImages = [];
   const transports = [];
   const connectionStatuses = [];
+  const sceneEvents = [];
+  const widgetRefreshes = [];
+  const handlers = {};
 
   return {
     published,
     cameraImages,
     transports,
     connectionStatuses,
+    sceneEvents,
+    widgetRefreshes,
+    handlers,
 
     externalIds(type, platformId) {
       const device = `${type}:${platformId}`;
@@ -51,6 +61,26 @@ export function createFakeGladys() {
 
     async setConnectionStatus(connected, message) {
       connectionStatuses.push({ connected, message });
+    },
+
+    async publishSceneEvent(key, data) {
+      sceneEvents.push({ key, data });
+    },
+
+    requestWidgetRefresh(key) {
+      widgetRefreshes.push(key);
+    },
+
+    onWidgetGet(key, callback) {
+      handlers[`widget:${key}`] = callback;
+    },
+
+    onWidgetAction(key, callback) {
+      handlers[`widgetAction:${key}`] = callback;
+    },
+
+    onSceneAction(key, callback) {
+      handlers[`sceneAction:${key}`] = callback;
     },
   };
 }

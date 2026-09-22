@@ -44,6 +44,42 @@ NUT drivers do not all report the same variables, so the integration only create
 
 Values are published only when they are numeric and actually reported by the driver. NUT text statuses are read during communication but are not published as Gladys features, keeping the discovery payload compatible with Core versions that do not yet recognize the `text` category.
 
+## Widget, scenes and actions (Gladys 5.1)
+
+The integration requires **Gladys 5.1 or later**.
+
+### "UPS" widget
+
+In **Dashboard → Edit → Add a widget**, choose **UPS**, then the UPS to show. The widget displays:
+
+- the battery charge (gauge) and the remaining runtime;
+- the UPS load and the input voltage;
+- a 24 h chart (battery charge and load);
+- the state (on mains, on battery, low battery…), the NUT alarms, the power and the server;
+- a **Refresh** button, which reads the UPS right away. It never sends a command to the UPS.
+
+### Scene triggers
+
+In the scene editor, **Integrations** category:
+
+| Trigger                        | When                               |
+| ------------------------------ | ---------------------------------- |
+| UPS: power failure, on battery | the UPS switches to battery (`OB`) |
+| UPS: power restored            | the UPS is back on mains (`OL`)    |
+| UPS: battery low               | NUT reports a low battery (`LB`)   |
+| UPS: battery to replace        | NUT asks for a replacement (`RB`)  |
+
+- Leave the **UPS** field empty to react to every UPS.
+- The state is checked **every minute**, whatever the refresh interval: a power cut is seen within a minute.
+- Variables available in the scene: `ups_name`, `status`, `battery_charge` (%), `battery_runtime` (min), `load` (%).
+- When the integration starts, the first reading is the reference: no event is sent for a UPS already on battery.
+
+### "Read a UPS status" scene action
+
+It reads the chosen UPS and returns to the following actions: `ups_name`, `status` (`online`, `on_battery`, `low_battery`, `forced_shutdown`, `off`, `bypass`, `unknown`), `on_battery`, `low_battery`, `replace_battery`, `battery_charge`, `battery_runtime` (min), `load`, `input_voltage`. A reading the UPS does not report is left out.
+
+Example: every morning, read the UPS status then send a message with the remaining runtime.
+
 ## Troubleshooting
 
 | Symptom                                                | Recommended checks                                                                                                                                                                                                                     |

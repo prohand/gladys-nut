@@ -63,3 +63,49 @@ test('protects all optional passwords and exposes the connection test action', (
     ['test_connection'],
   );
 });
+
+test('declares the Gladys 5.1 widget and scene capabilities the code handles', async () => {
+  const { SCENE_ACTIONS, SCENE_TRIGGERS } = await import('../src/scenes.js');
+  const { UPS_WIDGET } = await import('../src/widget.js');
+
+  // Older cores reject a manifest carrying these fields.
+  assert.equal(manifest.gladys_version, '>=5.1.0');
+  assert.deepEqual(
+    manifest.widgets.map((widget) => widget.key),
+    [UPS_WIDGET],
+  );
+  assert.deepEqual(
+    manifest.scene_triggers.map((trigger) => trigger.key),
+    Object.values(SCENE_TRIGGERS),
+  );
+  assert.deepEqual(
+    manifest.scene_actions.map((action) => action.key),
+    Object.values(SCENE_ACTIONS),
+  );
+
+  // Every UPS picker lists the integration's own devices.
+  const pickers = [
+    ...manifest.widgets.flatMap((widget) => widget.settings),
+    ...manifest.scene_triggers.flatMap((trigger) => trigger.fields),
+    ...manifest.scene_actions.flatMap((action) => action.fields),
+  ];
+  assert.ok(pickers.every((field) => field.key === 'ups' && field.source === 'devices'));
+  // An empty filter matches every UPS: a trigger field must stay optional.
+  assert.ok(manifest.scene_triggers.every((trigger) => !trigger.fields[0].required));
+});
+
+test('publishes exactly the declared trigger variables', async () => {
+  const { eventData } = await import('../src/scenes.js');
+  const item = {
+    server: { host: 'h', port: 3493 },
+    snapshot: { name: 'u', variables: new Map([['ups.status', 'OL']]) },
+  };
+  const gladys = { externalIds: (type, id) => ({ device: `${type}:${id}` }) };
+  const keys = Object.keys(eventData(gladys, item)).filter((key) => key !== 'ups');
+  for (const trigger of manifest.scene_triggers) {
+    assert.deepEqual(
+      trigger.variables.map((variable) => variable.key),
+      keys,
+    );
+  }
+});

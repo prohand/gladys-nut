@@ -8,15 +8,10 @@
   },
   "version": "1.0.7",
   "docker_image": "ghcr.io/prohand/gladys-nut:1.0.7",
-  "gladys_version": ">=4.86.0",
+  "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-nut/main/cover.jpg",
-  "categories": [
-    "energy",
-    "network"
-  ],
-  "transports": [
-    "local"
-  ],
+  "categories": ["energy", "network"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
@@ -274,8 +269,8 @@
         "fr": "Intervalle de rafraîchissement (s)"
       },
       "description": {
-        "en": "How often each UPS is queried. Every reading is kept in the Gladys history, so a short interval quickly grows the database: keep 300 s unless you really need finer measurements.",
-        "fr": "Fréquence d’interrogation de chaque onduleur. Chaque relevé est conservé dans l’historique Gladys : un intervalle court fait grossir vite la base, conservez 300 s sauf besoin réel de mesures plus fines."
+        "en": "How often the readings are written to the Gladys history. Each one is a row in the database: keep 300 s unless you need finer measurements. The UPS status is still checked every minute for the scenes.",
+        "fr": "Fréquence d’écriture des mesures dans l’historique Gladys. Chaque mesure est une ligne en base : gardez 300 s sauf besoin réel. L’état de l’onduleur reste vérifié chaque minute pour les scènes."
       },
       "required": false,
       "default": 300,
@@ -291,6 +286,367 @@
         "fr": "Tester les connexions NUT"
       },
       "timeout_seconds": 20
+    }
+  ],
+  "widgets": [
+    {
+      "key": "ups",
+      "label": {
+        "en": "UPS",
+        "fr": "Onduleur"
+      },
+      "icon": "battery-charging",
+      "settings": [
+        {
+          "key": "ups",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "UPS",
+            "fr": "Onduleur"
+          },
+          "required": true
+        }
+      ],
+      "action_timeout_seconds": 20
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "power_lost",
+      "label": {
+        "en": "UPS: power failure, on battery",
+        "fr": "Onduleur : coupure secteur, sur batterie"
+      },
+      "fields": [
+        {
+          "key": "ups",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "UPS (any when empty)",
+            "fr": "Onduleur (tous si vide)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "ups_name",
+          "type": "string",
+          "label": {
+            "en": "UPS name",
+            "fr": "Nom de l’onduleur"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "NUT status (ups.status)",
+            "fr": "État NUT (ups.status)"
+          }
+        },
+        {
+          "key": "battery_charge",
+          "type": "number",
+          "label": {
+            "en": "Battery charge (%)",
+            "fr": "Charge de la batterie (%)"
+          }
+        },
+        {
+          "key": "battery_runtime",
+          "type": "number",
+          "label": {
+            "en": "Battery runtime (min)",
+            "fr": "Autonomie restante (min)"
+          }
+        },
+        {
+          "key": "load",
+          "type": "number",
+          "label": {
+            "en": "Load (%)",
+            "fr": "Charge de l’onduleur (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "power_restored",
+      "label": {
+        "en": "UPS: power restored",
+        "fr": "Onduleur : retour du secteur"
+      },
+      "fields": [
+        {
+          "key": "ups",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "UPS (any when empty)",
+            "fr": "Onduleur (tous si vide)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "ups_name",
+          "type": "string",
+          "label": {
+            "en": "UPS name",
+            "fr": "Nom de l’onduleur"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "NUT status (ups.status)",
+            "fr": "État NUT (ups.status)"
+          }
+        },
+        {
+          "key": "battery_charge",
+          "type": "number",
+          "label": {
+            "en": "Battery charge (%)",
+            "fr": "Charge de la batterie (%)"
+          }
+        },
+        {
+          "key": "battery_runtime",
+          "type": "number",
+          "label": {
+            "en": "Battery runtime (min)",
+            "fr": "Autonomie restante (min)"
+          }
+        },
+        {
+          "key": "load",
+          "type": "number",
+          "label": {
+            "en": "Load (%)",
+            "fr": "Charge de l’onduleur (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "battery_low",
+      "label": {
+        "en": "UPS: battery low",
+        "fr": "Onduleur : batterie faible"
+      },
+      "fields": [
+        {
+          "key": "ups",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "UPS (any when empty)",
+            "fr": "Onduleur (tous si vide)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "ups_name",
+          "type": "string",
+          "label": {
+            "en": "UPS name",
+            "fr": "Nom de l’onduleur"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "NUT status (ups.status)",
+            "fr": "État NUT (ups.status)"
+          }
+        },
+        {
+          "key": "battery_charge",
+          "type": "number",
+          "label": {
+            "en": "Battery charge (%)",
+            "fr": "Charge de la batterie (%)"
+          }
+        },
+        {
+          "key": "battery_runtime",
+          "type": "number",
+          "label": {
+            "en": "Battery runtime (min)",
+            "fr": "Autonomie restante (min)"
+          }
+        },
+        {
+          "key": "load",
+          "type": "number",
+          "label": {
+            "en": "Load (%)",
+            "fr": "Charge de l’onduleur (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "battery_replace",
+      "label": {
+        "en": "UPS: battery to replace",
+        "fr": "Onduleur : batterie à remplacer"
+      },
+      "fields": [
+        {
+          "key": "ups",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "UPS (any when empty)",
+            "fr": "Onduleur (tous si vide)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "ups_name",
+          "type": "string",
+          "label": {
+            "en": "UPS name",
+            "fr": "Nom de l’onduleur"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "NUT status (ups.status)",
+            "fr": "État NUT (ups.status)"
+          }
+        },
+        {
+          "key": "battery_charge",
+          "type": "number",
+          "label": {
+            "en": "Battery charge (%)",
+            "fr": "Charge de la batterie (%)"
+          }
+        },
+        {
+          "key": "battery_runtime",
+          "type": "number",
+          "label": {
+            "en": "Battery runtime (min)",
+            "fr": "Autonomie restante (min)"
+          }
+        },
+        {
+          "key": "load",
+          "type": "number",
+          "label": {
+            "en": "Load (%)",
+            "fr": "Charge de l’onduleur (%)"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "get_ups_status",
+      "label": {
+        "en": "Read a UPS status",
+        "fr": "Lire l’état d’un onduleur"
+      },
+      "timeout_seconds": 20,
+      "fields": [
+        {
+          "key": "ups",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "UPS",
+            "fr": "Onduleur"
+          },
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "ups_name",
+          "type": "string",
+          "label": {
+            "en": "UPS name",
+            "fr": "Nom de l’onduleur"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "State (online, on_battery, low_battery…)",
+            "fr": "État (online, on_battery, low_battery…)"
+          }
+        },
+        {
+          "key": "on_battery",
+          "type": "boolean",
+          "label": {
+            "en": "On battery",
+            "fr": "Sur batterie"
+          }
+        },
+        {
+          "key": "low_battery",
+          "type": "boolean",
+          "label": {
+            "en": "Battery low",
+            "fr": "Batterie faible"
+          }
+        },
+        {
+          "key": "replace_battery",
+          "type": "boolean",
+          "label": {
+            "en": "Battery to replace",
+            "fr": "Batterie à remplacer"
+          }
+        },
+        {
+          "key": "battery_charge",
+          "type": "number",
+          "label": {
+            "en": "Battery charge (%)",
+            "fr": "Charge de la batterie (%)"
+          }
+        },
+        {
+          "key": "battery_runtime",
+          "type": "number",
+          "label": {
+            "en": "Battery runtime (min)",
+            "fr": "Autonomie restante (min)"
+          }
+        },
+        {
+          "key": "load",
+          "type": "number",
+          "label": {
+            "en": "Load (%)",
+            "fr": "Charge de l’onduleur (%)"
+          }
+        },
+        {
+          "key": "input_voltage",
+          "type": "number",
+          "label": {
+            "en": "Input voltage (V)",
+            "fr": "Tension d’entrée (V)"
+          }
+        }
+      ]
     }
   ]
 }
