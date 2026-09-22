@@ -15,13 +15,21 @@ Au démarrage et à chaque demande de scan, l’intégration exécute `LIST UPS`
 | Électricité         | `input.voltage`, `output.voltage`, `input.current`, `output.current`          | V et A                   |
 | Température         | `ups.temperature`                                                             | °C                       |
 
-Les valeurs sont actualisées via `LIST VAR <upsname>` à la fréquence configurée. Les onduleurs et les fonctionnalités sont découverts dynamiquement, ce qui permet de prendre en charge plusieurs modèles et plusieurs pilotes NUT sans configuration manuelle d’identifiants matériels.
+Avec **Gladys 5.1 ou plus** (version minimale requise), l’intégration ajoute aussi :
+
+- un **widget de tableau de bord** « Onduleur » : état, batterie, autonomie, charge, tension, courbe 24 h et bouton d’actualisation ;
+- quatre **déclencheurs de scène** : coupure secteur, retour du secteur, batterie faible, batterie à remplacer ;
+- une **action de scène** « Lire l’état d’un onduleur », dont les valeurs sont réutilisables dans la suite de la scène.
+
+Le détail est dans [docs/fr.md](./docs/fr.md).
+
+Les mesures sont écrites dans Gladys via `LIST VAR <upsname>` à la fréquence configurée. L’état `ups.status` est, lui, relu chaque minute pour les déclencheurs de scène, sans rien écrire dans l’historique. Les onduleurs et les fonctionnalités sont découverts dynamiquement, ce qui permet de prendre en charge plusieurs modèles et plusieurs pilotes NUT sans configuration manuelle d’identifiants matériels.
 
 ## Configuration dans Gladys
 
 Dans la page de configuration de l’intégration, configurez jusqu’à **cinq serveurs `upsd`**. Le premier serveur est obligatoire ; les quatre suivants sont facultatifs. Pour chaque serveur, renseignez l’hôte, le port TCP — **3493** par défaut — et, si nécessaire, les identifiants NUT. Choisissez ensuite un intervalle de rafraîchissement compris entre 60 et 86 400 secondes, **300 secondes par défaut**. Tous les onduleurs de tous les serveurs configurés sont découverts séparément.
 
-Gladys ne sait interroger un appareil qu’aux fréquences de son propre planificateur, la plus lente étant d’une minute. Chaque onduleur est donc enregistré sur cette fréquence d’une minute, et l’intégration ignore elle-même les scrutations qui tombent à l’intérieur de l’intervalle configuré : l’intervalle est appliqué au tick de scrutation le plus proche.
+Gladys ne sait interroger un appareil qu’aux fréquences de son propre planificateur, la plus lente étant d’une minute. Chaque onduleur est donc enregistré sur cette fréquence d’une minute. À chaque scrutation, l’intégration relit l’état de l’onduleur pour les scènes, mais n’écrit les mesures que si l’intervalle configuré est écoulé : l’intervalle est appliqué au tick de scrutation le plus proche.
 
 ### Volume de données écrit dans Gladys
 
@@ -36,6 +44,8 @@ Le serveur NUT doit autoriser les connexions provenant de l’environnement Glad
 ```text
 Gladys ── SDK WebSocket ── intégration gladys-nut ── TCP 3493 ── NUT upsd ── onduleur(s)
 ```
+
+Les fonctions Gladys 5.1 sont dans `src/widget.js` (widget), `src/scenes.js` (déclencheurs et action de scène) et `src/poll.js` (lecture chaque minute, détection des changements d’état). Les clés des déclencheurs et actions (`power_lost`, `power_restored`, `battery_low`, `battery_replace`, `get_ups_status`) sont enregistrées dans les scènes des utilisateurs : ne jamais les renommer.
 
 Le client TCP interne est volontairement limité aux commandes NUT de lecture `LIST UPS` et `LIST VAR`. Il ouvre une connexion courte par requête, gère les réponses multi-lignes ainsi que l’authentification facultative `USERNAME` / `PASSWORD`, puis publie les mesures numériques confirmées par le serveur NUT. Les fonctionnalités textuelles sont volontairement omises pour rester compatibles avec les versions de Gladys Core antérieures à la prise en charge de la catégorie `text`.
 
@@ -60,7 +70,7 @@ LOG_LEVEL=debug \
 npm start
 ```
 
-Les tests unitaires couvrent la validation de configuration, l’analyse des réponses du protocole NUT, l’authentification facultative, la découverte multi-onduleurs, la validité du payload de découverte (bornes des fonctionnalités, fréquence de scrutation), le filtrage des mesures inchangées et le mapping des mesures vers Gladys.
+Les tests unitaires couvrent la validation de configuration, l’analyse des réponses du protocole NUT, l’authentification facultative, la découverte multi-onduleurs, la validité du payload de découverte (bornes des fonctionnalités, fréquence de scrutation), le filtrage des mesures inchangées, le mapping des mesures vers Gladys, la lecture de `ups.status`, les événements de scène, l’action de scène et le contenu du widget (validé avec `validateWidgetContent` du SDK).
 
 ## Validation et publication
 

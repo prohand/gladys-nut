@@ -7,10 +7,12 @@ import { normalizeConfig } from './src/config.js';
 import {
   buildDiscoveredDevices,
   discoverUpses,
-  publishUpsStates,
   resetRefreshSchedule,
   testNutConnection,
 } from './src/devices/index.js';
+import { pollUps } from './src/poll.js';
+import { registerSceneActions } from './src/scenes.js';
+import { registerWidget } from './src/widget.js';
 
 const gladys = new GladysIntegration();
 let config;
@@ -43,10 +45,10 @@ gladys.onScanRequest(async () => {
 
 gladys.onPoll(async (device) => {
   try {
-    // Gladys polls at most every minute; publishUpsStates returns null when
-    // the poll falls inside the configured refresh interval and no NUT server
-    // was queried, leaving the connection status untouched.
-    const refreshed = await publishUpsStates(gladys, config, device.external_id);
+    // Gladys polls every minute: each poll reads the UPS for the scene
+    // triggers, but the readings and the connection status are only written
+    // once per configured refresh interval.
+    const { refreshed } = await pollUps(gladys, config, device.external_id);
     if (refreshed) {
       await gladys.setConnectionStatus(true);
     }
@@ -66,6 +68,11 @@ gladys.onAction('test_connection', async () => {
     throw error;
   }
 });
+
+// Gladys >= 5.1: dashboard widget and scene action. The scene triggers are
+// fired by the polls (src/poll.js).
+registerWidget(gladys, () => config);
+registerSceneActions(gladys, () => config);
 
 gladys.onConfigUpdated(async (rawConfig) => {
   try {

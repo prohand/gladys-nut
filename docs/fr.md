@@ -44,6 +44,42 @@ Les pilotes NUT ne renvoient pas tous les mêmes variables. L’intégration cr�
 
 Les mesures sont publiées uniquement lorsqu’elles sont numériques et effectivement retournées par le pilote. Les statuts textuels NUT sont lus pendant la communication mais ne sont pas publiés comme fonctionnalités Gladys afin de rester compatibles avec les versions Core qui ne reconnaissent pas encore la catégorie `text`.
 
+## Widget, scènes et actions (Gladys 5.1)
+
+L’intégration demande **Gladys 5.1 ou plus**.
+
+### Widget « Onduleur »
+
+Dans **Tableau de bord → Modifier → Ajouter un widget**, choisissez **Onduleur**, puis l’onduleur à afficher. Le widget montre :
+
+- la charge de la batterie (jauge) et l’autonomie restante ;
+- la charge de l’onduleur et la tension d’entrée ;
+- une courbe sur 24 h (charge batterie et charge onduleur) ;
+- l’état (sur secteur, sur batterie, batterie faible…), les alarmes NUT, la puissance et le serveur ;
+- un bouton **Actualiser**, qui relit l’onduleur tout de suite. Il n’envoie aucune commande à l’onduleur.
+
+### Déclencheurs de scène
+
+Dans l’éditeur de scènes, catégorie **Intégrations** :
+
+| Déclencheur                              | Quand                                  |
+| ---------------------------------------- | -------------------------------------- |
+| Onduleur : coupure secteur, sur batterie | l’onduleur passe sur batterie (`OB`)   |
+| Onduleur : retour du secteur             | l’onduleur revient sur secteur (`OL`)  |
+| Onduleur : batterie faible               | NUT signale une batterie faible (`LB`) |
+| Onduleur : batterie à remplacer          | NUT demande un remplacement (`RB`)     |
+
+- Laissez le champ **Onduleur** vide pour réagir à tous les onduleurs.
+- L’état est vérifié **chaque minute**, quel que soit l’intervalle de rafraîchissement : une coupure est vue en moins d’une minute.
+- Variables disponibles dans la scène : `ups_name`, `status`, `battery_charge` (%), `battery_runtime` (min), `load` (%).
+- Au démarrage de l’intégration, le premier relevé sert de référence : aucun événement n’est envoyé pour un onduleur déjà sur batterie.
+
+### Action de scène « Lire l’état d’un onduleur »
+
+Elle lit l’onduleur choisi et renvoie aux actions suivantes : `ups_name`, `status` (`online`, `on_battery`, `low_battery`, `forced_shutdown`, `off`, `bypass`, `unknown`), `on_battery`, `low_battery`, `replace_battery`, `battery_charge`, `battery_runtime` (min), `load`, `input_voltage`. Une mesure absente de l’onduleur n’est pas renvoyée.
+
+Exemple : chaque matin, lire l’état de l’onduleur puis envoyer un message avec l’autonomie restante.
+
 ## Dépannage
 
 | Symptôme                                          | Vérifications recommandées                                                                                                                                                                                                                                             |

@@ -161,8 +161,9 @@ const NUMERIC_VARIABLES = [
 // Gladys polls devices on a fixed set of frequencies (DEVICE_POLL_FREQUENCIES
 // in Gladys Core), the slowest being one minute: publishing any other value
 // makes the core reject the whole discovery payload. Every device therefore
-// registers on that slowest tick, and the integration itself ignores the polls
-// that fall inside the configured interval (see isRefreshDue). The faster core
+// registers on that slowest tick, and the integration itself writes no reading
+// on the polls that fall inside the configured interval (see isRefreshDue):
+// those polls only watch `ups.status` for the scene triggers. The faster core
 // frequencies are deliberately never used: they would double the number of
 // history rows written into the Gladys database for readings that move slowly.
 export const CORE_POLL_FREQUENCY = 60 * 1000;
@@ -180,12 +181,12 @@ const lastRefreshAt = new Map();
 const lastPublishedStates = new Map();
 
 /**
- * Whether a core poll must actually query the NUT server, or belongs to the
- * configured interval and has to be ignored.
+ * Whether a core poll must write the UPS readings to the Gladys history, or
+ * belongs to the configured interval and only watches the UPS status.
  * @param {object} config - The normalized integration configuration.
  * @param {string} deviceExternalId - The polled device external_id.
  * @param {number} [now] - The current timestamp, injectable for tests.
- * @returns {boolean} True when the UPS has to be read again.
+ * @returns {boolean} True when the readings have to be published again.
  */
 export function isRefreshDue(config, deviceExternalId, now = Date.now()) {
   const last = lastRefreshAt.get(deviceExternalId);
@@ -254,6 +255,48 @@ function valueAsNumber(variables, variable) {
   return Number.isFinite(value) ? value : undefined;
 }
 
+/**
+ * The Gladys external ids of a discovered UPS.
+ * @param {object} gladys - The SDK instance.
+ * @param {object} discovered - A `{ server, snapshot }` pair.
+ * @returns {object} `{ device, feature(key) }`.
+ */
+export function upsIds(gladys, discovered) {
+  return gladys.externalIds(DEVICE_TYPE, platformId(discovered.server, discovered.snapshot.name));
+}
+
+/**
+ * The name Gladys shows for a UPS: brand and model when NUT reports them,
+ * followed by the server host so identical models stay distinct.
+ * @param {object} discovered - A `{ server, snapshot }` pair.
+ * @returns {string} The device name.
+ */
+export function upsDisplayName(discovered) {
+  const { server, snapshot } = discovered;
+  const manufacturer = snapshot.variables.get('device.mfr') ?? snapshot.variables.get('ups.mfr');
+  const model = snapshot.variables.get('device.model') ?? snapshot.variables.get('ups.model');
+  const name =
+    [manufacturer, model].filter(Boolean).join(' ') || snapshot.description || snapshot.name;
+  return `${name} (${server.host})`;
+}
+
+/**
+ * The numeric readings of a UPS, keyed by feature key ("battery-charge",
+ * "load", ...). Only the variables NUT actually reports are present.
+ * @param {object} discovered - A `{ server, snapshot }` pair.
+ * @returns {Map<string, number>} The readings.
+ */
+export function upsReadings(discovered) {
+  const readings = new Map();
+  for (const definition of NUMERIC_VARIABLES) {
+    const value = valueAsNumber(discovered.snapshot.variables, definition.variable);
+    if (value !== undefined) {
+      readings.set(definition.key, value);
+    }
+  }
+  return readings;
+}
+
 function featureFromDefinition(ids, definition) {
   const { variable: _variable, key, name, ...properties } = definition;
   return {
@@ -268,11 +311,7 @@ function featureFromDefinition(ids, definition) {
 
 export function buildUpsDevice(gladys, _config, discovered) {
   const { server, snapshot } = discovered;
-  const ids = gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name));
-  const manufacturer = snapshot.variables.get('device.mfr') ?? snapshot.variables.get('ups.mfr');
-  const model = snapshot.variables.get('device.model') ?? snapshot.variables.get('ups.model');
-  const name =
-    [manufacturer, model].filter(Boolean).join(' ') || snapshot.description || snapshot.name;
+  const ids = upsIds(gladys, discovered);
 
   const numericFeatures = NUMERIC_VARIABLES.filter(
     (definition) => valueAsNumber(snapshot.variables, definition.variable) !== undefined,
@@ -283,7 +322,7 @@ export function buildUpsDevice(gladys, _config, discovered) {
     );
   }
   return {
-    name: `${name} (${server.host})`,
+    name: upsDisplayName(discovered),
     external_id: ids.device,
     // Gladys never polls a device that does not ask for it: without
     // should_poll, the device is created but its values stay frozen on the
@@ -301,15 +340,11 @@ export function buildDiscoveredDevices(gladys, config, discovered) {
 }
 
 export function buildUpsStates(gladys, _config, discovered) {
-  const { server, snapshot } = discovered;
-  const ids = gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name));
-  const numericStates = NUMERIC_VARIABLES.flatMap((definition) => {
-    const value = valueAsNumber(snapshot.variables, definition.variable);
-    return value === undefined
-      ? []
-      : [{ device_feature_external_id: ids.feature(definition.key), state: value }];
-  });
-  return numericStates;
+  const ids = upsIds(gladys, discovered);
+  return [...upsReadings(discovered)].map(([key, value]) => ({
+    device_feature_external_id: ids.feature(key),
+    state: value,
+  }));
 }
 
 export async function discoverUpses(config) {
@@ -329,32 +364,66 @@ export async function discoverUpses(config) {
   );
   const errors = results.filter(({ error }) => error).map(({ error }) => error);
   if (discovered.length === 0 && errors.length === results.length) {
+    if (results.length === 1) {
+      throw errors[0];
+    }
     throw new Error(`None of the ${results.length} configured NUT servers could be reached.`);
   }
-  logger.info(
-    `Discovered ${discovered.length} UPS device(s) on ${config.servers.length} NUT server(s).`,
+  // Every poll goes through here once a minute: debug level keeps the logs
+  // readable, the scan result is reported by the connection status.
+  logger.debug(
+    `Read ${discovered.length} UPS device(s) on ${config.servers.length} NUT server(s).`,
   );
   return discovered;
 }
 
-export async function publishUpsStates(gladys, config, deviceExternalId) {
-  if (!isRefreshDue(config, deviceExternalId)) {
-    return null;
-  }
-  const discovered = await discoverUpses(config);
+/**
+ * The configured servers that may hold a device: its external id starts with
+ * the host and port of its server, so the other servers need not be queried.
+ * Falls back to every server when none matches (e.g. a renamed host).
+ * @param {object} gladys - The SDK instance.
+ * @param {object} config - The normalized integration configuration.
+ * @param {string} deviceExternalId - The device external_id.
+ * @returns {object[]} The servers to query.
+ */
+export function serversOfDevice(gladys, config, deviceExternalId) {
+  const matching = config.servers.filter((server) =>
+    deviceExternalId.startsWith(gladys.externalIds(DEVICE_TYPE, platformId(server, '')).device),
+  );
+  return matching.length > 0 ? matching : config.servers;
+}
+
+/**
+ * Read one UPS from its NUT server.
+ * @param {object} gladys - The SDK instance.
+ * @param {object} config - The normalized integration configuration.
+ * @param {string} deviceExternalId - The device external_id.
+ * @returns {Promise<object>} The `{ server, snapshot }` pair of the UPS.
+ */
+export async function readUps(gladys, config, deviceExternalId) {
+  const servers = serversOfDevice(gladys, config, deviceExternalId);
+  const discovered = await discoverUpses({ ...config, servers });
   const item = discovered.find(
-    ({ server, snapshot }) =>
-      gladys.externalIds(DEVICE_TYPE, platformId(server, snapshot.name)).device ===
-      deviceExternalId,
+    (candidate) => upsIds(gladys, candidate).device === deviceExternalId,
   );
   if (!item) {
     throw new Error(`The UPS for ${deviceExternalId} is no longer exposed by the NUT servers.`);
   }
+  return item;
+}
 
-  // Only the readings that actually changed reach Gladys: a UPS idle on mains
-  // power reports the same charge, runtime and voltages for hours, and every
-  // repeat would be an extra history row for no information at all.
-  const now = Date.now();
+/**
+ * Write the readings of a UPS to the Gladys history. Only the readings that
+ * actually changed reach Gladys: a UPS idle on mains power reports the same
+ * charge, runtime and voltages for hours, and every repeat would be an extra
+ * history row for no information at all.
+ * @param {object} gladys - The SDK instance.
+ * @param {object} config - The normalized integration configuration.
+ * @param {object} item - The `{ server, snapshot }` pair of the UPS.
+ * @param {number} [now] - The current timestamp, injectable for tests.
+ * @returns {Promise<number>} The number of states published.
+ */
+export async function publishUpsReadings(gladys, config, item, now = Date.now()) {
   const states = buildUpsStates(gladys, config, item).filter((state) =>
     isStatePublishable(state, now),
   );
@@ -366,8 +435,8 @@ export async function publishUpsStates(gladys, config, deviceExternalId) {
   }
   // Recorded once the read succeeded: a failed poll is retried on the next
   // core tick instead of waiting for a whole configured interval.
-  markRefreshed(deviceExternalId);
-  return item;
+  markRefreshed(upsIds(gladys, item).device, now);
+  return states.length;
 }
 
 export async function testNutConnection(config) {
