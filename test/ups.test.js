@@ -144,7 +144,9 @@ test('gives the load a type shared with another feature so Gladys shows its name
 
   // The Gladys front-end titles a feature with its category label ("Unknown")
   // unless another feature of the device has the same type.
-  const sharing = device.features.filter((feature) => feature !== load && feature.type === load.type);
+  const sharing = device.features.filter(
+    (feature) => feature !== load && feature.type === load.type,
+  );
   assert.ok(sharing.some((feature) => feature.name === 'Battery charge'));
 });
 
