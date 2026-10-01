@@ -92,6 +92,7 @@ Exemple : chaque matin, lire l’état de l’onduleur puis envoyer un message a
 | Ajout refusé : « appareil incomplet ou invalide » | Mettez à jour l’intégration. Ce refus (HTTP 422) venait de fonctionnalités publiées sans bornes `min` et `max`, désormais toujours déclarées.                                                                                                                          |
 | Valeurs figées après l’ajout                      | Mettez à jour l’intégration : les appareils sont désormais publiés avec la scrutation périodique activée.                                                                                                                                                              |
 | Fonctionnalités affichées sans nom ni icône       | Mettez à jour l’intégration, puis ré-ajoutez l’onduleur depuis l’onglet **Découverte** pour mettre à jour ses fonctionnalités existantes : la charge et la puissance apparente étaient publiées sur un couple catégorie/type que le front Gladys ne sait pas dessiner. |
+| La charge de l’onduleur s’affiche « Inconnu »     | Mettez à jour l’intégration, puis ré-ajoutez l’onduleur depuis l’onglet **Découverte** : la charge (`ups.load`) est maintenant publiée dans une catégorie qui laisse Gladys afficher son nom « Load ».                                                                 |
 
 Pour obtenir les détails de l’erreur, ouvrez les journaux de l’intégration dans Gladys. Vous pouvez également régler `LOG_LEVEL=debug` pour disposer de logs plus détaillés.
 

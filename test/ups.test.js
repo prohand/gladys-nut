@@ -102,12 +102,12 @@ test('bounds every published feature, as Gladys rejects a null min or max', () =
 // empty chip on the device page, so only pairs known to both are published here.
 const RENDERABLE_CATEGORY_TYPES = new Set([
   'battery/integer',
+  'counter-sensor/integer',
   'duration/integer',
   'energy-sensor/power',
   'energy-sensor/voltage',
   'energy-sensor/current',
   'temperature-sensor/decimal',
-  'unknown/unknown',
 ]);
 
 test('publishes only category/type pairs the Gladys front-end can render', () => {
@@ -129,12 +129,23 @@ test('gives the load and the apparent power a renderable category', () => {
   const load = device.features.find((feature) => feature.name === 'Load');
   const apparentPower = device.features.find((feature) => feature.name === 'Apparent power');
 
-  assert.equal(load.category, 'unknown');
-  assert.equal(load.type, 'unknown');
+  assert.equal(load.category, 'counter-sensor');
+  assert.equal(load.type, 'integer');
   assert.equal(load.unit, 'percent');
   assert.equal(apparentPower.category, 'energy-sensor');
   assert.equal(apparentPower.type, 'power');
   assert.equal(apparentPower.unit, 'volt-ampere');
+});
+
+test('gives the load a type shared with another feature so Gladys shows its name', () => {
+  const gladys = createFakeGladys();
+  const device = buildUpsDevice(gladys, config, discovered());
+  const load = device.features.find((feature) => feature.name === 'Load');
+
+  // The Gladys front-end titles a feature with its category label ("Unknown")
+  // unless another feature of the device has the same type.
+  const sharing = device.features.filter((feature) => feature !== load && feature.type === load.type);
+  assert.ok(sharing.some((feature) => feature.name === 'Battery charge'));
 });
 
 test('registers every device on the slowest polling frequency Gladys accepts', () => {

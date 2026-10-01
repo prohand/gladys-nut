@@ -92,6 +92,7 @@ Example: every morning, read the UPS status then send a message with the remaini
 | Adding a UPS fails with "incomplete or invalid device" | Update the integration. That rejection (HTTP 422) came from features published without their `min` and `max` bounds, which are now always declared.                                                                                    |
 | Values never change after adding the device            | Update the integration: devices are now published with periodic polling enabled.                                                                                                                                                       |
 | Some features are displayed without a name or an icon  | Update the integration, then add the UPS again from the **Discovery** tab so its existing features are updated: the load and the apparent power were published on a category/type pair the Gladys front-end does not know how to draw. |
+| The UPS load is displayed as "Unknown"                 | Update the integration, then add the UPS again from the **Discovery** tab: the load (`ups.load`) is now published on a category that lets Gladys show its name, "Load".                                                                |
 
 For detailed errors, open the integration logs in Gladys. You can also set `LOG_LEVEL=debug` for more detailed logs.
 

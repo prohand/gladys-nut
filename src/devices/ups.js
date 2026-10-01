@@ -51,13 +51,15 @@ const NUMERIC_VARIABLES = [
     variable: 'ups.load',
     key: 'load',
     name: 'Load',
-    // Gladys has no category for a generic percentage of a rated capacity, and
-    // `energy-sensor` has no `decimal` type: that pair has neither icon nor
-    // label in the front-end, which displayed the feature as a blank chip. The
-    // `unknown/unknown` pair is the documented catch-all and renders properly;
-    // the feature name and its percent unit carry the meaning.
-    category: DEVICE_FEATURE_CATEGORIES.UNKNOWN,
-    type: DEVICE_FEATURE_TYPES.UNKNOWN.UNKNOWN,
+    // Gladys has no category for a percentage of a rated capacity. The
+    // `unknown/unknown` catch-all rendered, but the front-end titles a feature
+    // with its category label ("Unknown") whenever no other feature of the
+    // device shares its type, which is always the case for that pair. The
+    // neutral `counter-sensor/integer` pair shares the `integer` type with the
+    // battery charge and runtime, so Gladys shows the feature name ("Load")
+    // instead; the percent unit carries the meaning.
+    category: DEVICE_FEATURE_CATEGORIES.COUNTER_SENSOR,
+    type: DEVICE_FEATURE_TYPES.SENSOR.INTEGER,
     unit: DEVICE_FEATURE_UNITS.PERCENT,
     min: 0,
     max: 100,
