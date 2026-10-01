@@ -48,6 +48,10 @@ jobs:
         with:
           node-version: 24
 
+      # Prettier is needed to reformat the manifest after jq rewrites it.
+      - name: Install dependencies
+        run: npm ci
+
       - name: Bump version and update the manifest
         id: bump
         env:
@@ -70,6 +74,9 @@ jobs:
             '.version = $version | .docker_image = $image' \
             gladys-assistant-integration.json > "$tmp"
           mv "$tmp" gladys-assistant-integration.json
+          # jq expands short arrays over several lines, which the CI format
+          # check rejects: put the manifest back in the Prettier style.
+          npx prettier --write gladys-assistant-integration.json
 
           echo "version=${new_version}" >> "$GITHUB_OUTPUT"
 
