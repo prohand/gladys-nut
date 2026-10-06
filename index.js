@@ -7,6 +7,7 @@ import { normalizeConfig } from './src/config.js';
 import {
   buildDiscoveredDevices,
   discoverUpses,
+  forgetDevice,
   resetRefreshSchedule,
   testNutConnection,
 } from './src/devices/index.js';
@@ -15,7 +16,14 @@ import { registerSceneActions } from './src/scenes.js';
 import { registerWidget } from './src/widget.js';
 
 const gladys = new GladysIntegration();
-let config;
+// Null until a configuration with at least one server has been read: the
+// handlers below say so instead of failing on `undefined`.
+let config = null;
+
+const NOT_CONFIGURED = {
+  en: 'No NUT server configured yet: fill in the host of the first server, then save.',
+  fr: 'Aucun serveur NUT configuré : renseignez l’hôte du premier serveur, puis enregistrez.',
+};
 
 async function refreshDiscovery() {
   const snapshots = await discoverUpses(config);
@@ -44,6 +52,9 @@ gladys.onScanRequest(async () => {
 });
 
 gladys.onPoll(async (device) => {
+  if (!config) {
+    return;
+  }
   try {
     // Gladys polls every minute: each poll reads the UPS for the scene
     // triggers, but the readings and the connection status are only written
@@ -59,6 +70,9 @@ gladys.onPoll(async (device) => {
 });
 
 gladys.onAction('test_connection', async () => {
+  if (!config) {
+    return NOT_CONFIGURED;
+  }
   try {
     const message = await testNutConnection(config);
     await gladys.setConnectionStatus(true);
@@ -68,6 +82,23 @@ gladys.onAction('test_connection', async () => {
     throw error;
   }
 });
+
+// Gladys drops the states of a device that does not exist yet, while the
+// publisher records them as published: read a UPS the moment it is added (or
+// updated from the Discovery tab), with everything it reports.
+async function readNewDevice(device) {
+  forgetDevice(device.external_id);
+  if (!config) {
+    return;
+  }
+  try {
+    await pollUps(gladys, config, device.external_id);
+  } catch (error) {
+    logger.warn(`First read of ${device.external_id} failed: ${error.message}`);
+  }
+}
+gladys.onDeviceCreated(readNewDevice);
+gladys.onDeviceUpdated(readNewDevice);
 
 // Gladys >= 5.1: dashboard widget and scene action. The scene triggers are
 // fired by the polls (src/poll.js).

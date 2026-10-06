@@ -64,8 +64,12 @@ function quoteNutArgument(value) {
 }
 
 class NutConnection {
-  constructor(socket) {
+  constructor(socket, timeout) {
     this.socket = socket;
+    // Every request is bounded too, not only the TCP connection: an upsd that
+    // accepts the connection and then stops answering (a hung driver, a
+    // half-open socket) would otherwise freeze the poll forever.
+    this.timeout = timeout;
     this.buffer = '';
     this.pending = null;
 
@@ -87,7 +91,7 @@ class NutConnection {
 
       socket.once('connect', () => {
         clearTimeout(timer);
-        resolve(new NutConnection(socket));
+        resolve(new NutConnection(socket, timeout));
       });
       socket.once('error', (error) => {
         clearTimeout(timer);
@@ -134,7 +138,26 @@ class NutConnection {
       throw new NutProtocolError('A NUT request is already pending.');
     }
     return new Promise((resolve, reject) => {
-      this.pending = { lines: [], resolve, reject, isComplete };
+      const timer = this.timeout
+        ? setTimeout(() => {
+            this.fail(
+              new NutProtocolError(
+                `The NUT server did not answer ${command.split(' ')[0]} within ${this.timeout} ms.`,
+              ),
+            );
+            this.socket.destroy();
+          }, this.timeout)
+        : null;
+      const settle = (callback) => (value) => {
+        clearTimeout(timer);
+        callback(value);
+      };
+      this.pending = {
+        lines: [],
+        resolve: settle(resolve),
+        reject: settle(reject),
+        isComplete,
+      };
       this.socket.write(`${command}\n`, (error) => {
         if (error) {
           this.fail(error);

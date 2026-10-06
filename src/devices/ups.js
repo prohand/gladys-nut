@@ -238,6 +238,25 @@ export function markRefreshed(deviceExternalId, now = Date.now()) {
 }
 
 /**
+ * Forget what was published for one device, so its next read publishes every
+ * value again. Gladys drops the states of a device that does not exist yet,
+ * while this module records them as published: without this, a UPS added
+ * from the Discovery tab stayed empty until a value changed or the hourly
+ * heartbeat.
+ * @param {string} deviceExternalId - The Gladys device external_id.
+ * @returns {void}
+ */
+export function forgetDevice(deviceExternalId) {
+  lastRefreshAt.delete(deviceExternalId);
+  const prefix = `${deviceExternalId}:`;
+  for (const featureExternalId of lastPublishedStates.keys()) {
+    if (featureExternalId.startsWith(prefix)) {
+      lastPublishedStates.delete(featureExternalId);
+    }
+  }
+}
+
+/**
  * Drop every recorded refresh and published state, so the next poll of each
  * device reads its NUT server again and republishes everything it reports.
  * Called when the configuration changes.

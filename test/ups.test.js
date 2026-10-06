@@ -6,6 +6,7 @@ import {
   buildUpsDevice,
   buildUpsStates,
   CORE_POLL_FREQUENCY,
+  forgetDevice,
   isRefreshDue,
   isStatePublishable,
   markRefreshed,
@@ -240,4 +241,20 @@ test('keeps identical UPS names independent across NUT servers', () => {
   assert.notEqual(devices[0].external_id, devices[1].external_id);
   assert.match(devices[0].name, /nut-one\.local/);
   assert.match(devices[1].name, /nut-two\.local/);
+});
+
+test('a device added in Gladys republishes everything on its next read', () => {
+  resetRefreshSchedule();
+  const mine = { device_feature_external_id: 'nut-ups:ups:battery-charge', state: 92 };
+  const other = { device_feature_external_id: 'nut-ups:ups-b:battery-charge', state: 80 };
+  markStatePublished(mine, 0);
+  markStatePublished(other, 0);
+  markRefreshed('nut-ups:ups', 0);
+
+  // The states published before the device existed were dropped by Gladys.
+  forgetDevice('nut-ups:ups');
+  assert.equal(isStatePublishable({ ...mine }, 60 * 1000), true);
+  assert.equal(isRefreshDue({ poll_frequency: 300 }, 'nut-ups:ups', 60 * 1000), true);
+  // The other UPS keeps its own schedule.
+  assert.equal(isStatePublishable({ ...other }, 60 * 1000), false);
 });

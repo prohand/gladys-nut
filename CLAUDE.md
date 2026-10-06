@@ -61,6 +61,11 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
   Do not remove either mechanism.
 - **Every feature declares `min`/`max`** (NOT NULL in Gladys, HTTP 422 otherwise). They are
   descriptive only: values outside are never clamped.
+- **Every request is bounded by `timeout`**, not only the TCP connection: an upsd that accepts the
+  connection then stays silent fails the request instead of freezing the poll.
+- **A device added in Gladys is read at once** (`onDeviceCreated` / `onDeviceUpdated` →
+  `forgetDevice()` + `pollUps()`): Gladys drops states sent before the device exists, while the
+  dedupe recorded them as published.
 - **Category choices are deliberate** (comments in `ups.js`): `ups.load` uses
   `counter-sensor/integer` so the front shows its name instead of "Unknown"; apparent power is
   `energy-sensor/power` with a VA unit.

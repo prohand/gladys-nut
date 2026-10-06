@@ -16,6 +16,12 @@ All notable changes to this integration are documented here. The format follows
 
 - Development dependencies updated to their latest versions (ESLint 10.12, Prettier 3.9.9, globals 17.13).
 
+### Fixed
+
+- A NUT server that accepts the connection then stops answering no longer freezes the poll: every request is bounded by the configured timeout, not only the connection.
+- A UPS added from the Discovery tab shows its values right away instead of up to an hour later: it is read the moment Gladys creates it, with every value republished.
+- Before any server is configured, polls are ignored and "Test the connection" says what to fill in, instead of failing on an internal error.
+
 ## [2.0.1] - 2026-10-01
 
 ### Fixed

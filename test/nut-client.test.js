@@ -90,3 +90,18 @@ test('reads variables for every discovered UPS and authenticates when configured
   assert.ok(commands.includes('LIST VAR "ups-a"'));
   assert.ok(commands.includes('LIST VAR "ups-b"'));
 });
+
+test('a NUT server that accepts the connection then stays silent times out', async () => {
+  const silent = net.createServer(() => {});
+  await new Promise((resolve) => silent.listen(0, '127.0.0.1', resolve));
+  try {
+    await assert.rejects(
+      () => listUps({ host: '127.0.0.1', port: silent.address().port, timeout: 200 }),
+      (error) =>
+        error instanceof NutProtocolError &&
+        /did not answer LIST within 200 ms/.test(error.message),
+    );
+  } finally {
+    silent.close();
+  }
+});
