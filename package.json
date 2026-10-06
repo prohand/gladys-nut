@@ -1,6 +1,6 @@
 {
   "name": "gladys-nut",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "private": true,
   "description": "Gladys Assistant external integration for Network UPS Tools (NUT).",
   "type": "module",
