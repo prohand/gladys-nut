@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { resetRefreshSchedule, serversOfDevice } from '../src/devices/ups.js';
+import {
+  discoverUpsesWithFailures,
+  resetRefreshSchedule,
+  serversOfDevice,
+} from '../src/devices/ups.js';
 import { pollUps } from '../src/poll.js';
 import { resetStatusWatch } from '../src/scenes.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
@@ -61,4 +65,22 @@ test('queries only the server a device belongs to', () => {
   assert.deepEqual(serversOfDevice(gladys, config, 'nut-ups:nas-3493-ups'), [one]);
   // A device of a server removed from the configuration: try them all.
   assert.deepEqual(serversOfDevice(gladys, config, 'nut-ups:old-3493-ups'), [one, two]);
+});
+
+test('names the server that did not answer while another one did', async () => {
+  const config = {
+    servers: [
+      { id: 'server-1', host: '127.0.0.1', port: nut.port },
+      // Nothing listens on port 9: refused at once.
+      { id: 'server-2', host: '127.0.0.1', port: 9 },
+    ],
+    poll_frequency: 300,
+    timeout: 1000,
+  };
+  const { discovered, failures } = await discoverUpsesWithFailures(config);
+  assert.equal(discovered.length, 1);
+  assert.deepEqual(
+    failures.map(({ server }) => server.id),
+    ['server-2'],
+  );
 });

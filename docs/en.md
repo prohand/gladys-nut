@@ -58,6 +58,8 @@ In **Dashboard → Edit → Add a widget**, choose **UPS**, then the UPS to show
 - the state (on mains, on battery, low battery…), the NUT alarms, the power and the server;
 - a **Refresh** button, which reads the UPS right away. It never sends a command to the UPS.
 
+The widget shows the last reading the integration made (3 minutes old at most). When the UPS is slow to answer, it shows "Reading the UPS…" and updates a few seconds later.
+
 ### Scene triggers
 
 In the scene editor, **Integrations** category:

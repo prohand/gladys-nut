@@ -58,6 +58,8 @@ Dans **Tableau de bord → Modifier → Ajouter un widget**, choisissez **Ondule
 - l’état (sur secteur, sur batterie, batterie faible…), les alarmes NUT, la puissance et le serveur ;
 - un bouton **Actualiser**, qui relit l’onduleur tout de suite. Il n’envoie aucune commande à l’onduleur.
 
+Le widget affiche le dernier relevé fait par l’intégration (au plus 3 minutes). Si l’onduleur met trop de temps à répondre, il affiche « Lecture de l’onduleur… » et se met à jour quelques secondes plus tard.
+
 ### Déclencheurs de scène
 
 Dans l’éditeur de scènes, catégorie **Intégrations** :

@@ -10,11 +10,30 @@
 
 import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
 import { formatRuntime, readUpsStatus } from './devices/status.js';
-import { publishUpsReadings, readUps, upsDisplayName, upsIds, upsReadings } from './devices/ups.js';
+import {
+  lastReadUps,
+  publishUpsReadings,
+  readUps,
+  upsDisplayName,
+  upsIds,
+  upsReadings,
+} from './devices/ups.js';
 
 export const UPS_WIDGET = 'ups';
 export const REFRESH_ACTION = 'refresh';
 const WIDGET_TTL_SECONDS = 60;
+
+// The core waits 15 s for a widget, then shows "data unavailable" and never
+// retries until the dashboard is reloaded. A NUT read is a connection, a login
+// and two lists, each bounded by the configured timeout (up to 30 s): past this
+// deadline the card says it is loading, and the read keeps going so the next
+// pull finds it.
+export const PULL_DEADLINE_MS = 9000;
+const LOADING_TTL_SECONDS = 15;
+
+// A read the polls made this recently is shown as is: the core polls every
+// created UPS once a minute.
+export const LAST_READ_MAX_AGE_MS = 3 * 60 * 1000;
 
 function truncate(text, length) {
   const characters = [...text];
@@ -34,6 +53,41 @@ const refreshButton = {
  * @param {object} message - A `{ en, fr }` explanation.
  * @returns {object} The widget content.
  */
+/**
+ * Settle with the promise, or with null once the deadline passed. The promise
+ * keeps running: its result is remembered for the next pull.
+ * @param {Promise<object>} promise - The read.
+ * @param {number} deadlineMs - How long to wait.
+ * @returns {Promise<object|null>} The result, or null when it came too late.
+ */
+export function withDeadline(promise, deadlineMs) {
+  // A rejection after the deadline must not be left unhandled.
+  promise.catch(() => {});
+  let timer;
+  const deadline = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(null), deadlineMs);
+    timer.unref?.();
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
+/** The card served while a slow read finishes, re-pulled shortly after. */
+export function loadingContent() {
+  return {
+    ttl_seconds: LOADING_TTL_SECONDS,
+    components: [
+      {
+        type: 'text',
+        variant: 'body',
+        text: {
+          en: 'Reading the UPS, this takes longer than usual…',
+          fr: 'Lecture de l’onduleur, plus longue que d’habitude…',
+        },
+      },
+    ],
+  };
+}
+
 export function buildMessageContent(message) {
   return {
     ttl_seconds: WIDGET_TTL_SECONDS,
@@ -57,10 +111,15 @@ export function buildUpsWidgetContent(gladys, item) {
   ];
 
   if (readings.has('battery-charge')) {
+    // An inline value, not the device_feature: the core draws a device-bound
+    // gauge with no unit at all, so the charge read "97" instead of "97 %".
     components.push({
       type: 'gauge',
       label: { en: 'Battery', fr: 'Batterie' },
-      device_feature: ids.feature('battery-charge'),
+      value: Math.round(readings.get('battery-charge')),
+      min: 0,
+      max: 100,
+      unit: '%',
       color: status.lowBattery ? WIDGET_COLORS.DANGER : WIDGET_COLORS.SUCCESS,
     });
   }
@@ -179,8 +238,13 @@ export function registerWidget(gladys, getConfig) {
         fr: 'Choisissez un onduleur dans les réglages de ce widget.',
       });
     }
+    const recent = lastReadUps(settings.ups, LAST_READ_MAX_AGE_MS);
+    if (recent) {
+      return buildUpsWidgetContent(gladys, recent);
+    }
     try {
-      return buildUpsWidgetContent(gladys, await readUps(gladys, config, settings.ups));
+      const item = await withDeadline(readUps(gladys, config, settings.ups), PULL_DEADLINE_MS);
+      return item ? buildUpsWidgetContent(gladys, item) : loadingContent();
     } catch (error) {
       return buildMessageContent({
         en: truncate(`Cannot read the UPS: ${error.message}`, 300),
