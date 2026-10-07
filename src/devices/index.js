@@ -5,6 +5,7 @@
 import {
   buildDiscoveredDevices,
   discoverUpses,
+  discoverUpsesWithFailures,
   forgetDevice,
   resetRefreshSchedule,
   testNutConnection,
@@ -13,6 +14,7 @@ import {
 export {
   buildDiscoveredDevices,
   discoverUpses,
+  discoverUpsesWithFailures,
   forgetDevice,
   resetRefreshSchedule,
   testNutConnection,

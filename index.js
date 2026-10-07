@@ -6,7 +6,7 @@ import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig } from './src/config.js';
 import {
   buildDiscoveredDevices,
-  discoverUpses,
+  discoverUpsesWithFailures,
   forgetDevice,
   resetRefreshSchedule,
   testNutConnection,
@@ -26,9 +26,52 @@ const NOT_CONFIGURED = {
 };
 
 async function refreshDiscovery() {
-  const snapshots = await discoverUpses(config);
-  await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config, snapshots));
-  return snapshots;
+  const { discovered, failures } = await discoverUpsesWithFailures(config);
+  await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config, discovered));
+  await reportDiscovered(failures);
+  return discovered;
+}
+
+/**
+ * Connected — and, when one of several servers did not answer, say which: a
+ * plain "connected" hid a second UPS host that was down.
+ * @param {{server: {host: string, port: number}, error: Error}[]} failures - Servers that failed.
+ * @returns {Promise<void>} Resolves once the status is stored.
+ */
+async function reportDiscovered(failures) {
+  if (failures.length === 0) {
+    await gladys.setConnectionStatus(true);
+    return;
+  }
+  const names = failures.map(({ server }) => `${server.host}:${server.port}`).join(', ');
+  await gladys.setConnectionStatus(true, {
+    en: `Connected, but ${failures.length} NUT server(s) did not answer: ${names}.`,
+    fr: `Connecté, mais ${failures.length} serveur(s) NUT n’ont pas répondu : ${names}.`,
+  });
+}
+
+/**
+ * Normalize a raw configuration, keeping the previous one when it is refused,
+ * and report a refusal for what it is: "cannot reach the NUT server" said
+ * nothing useful to someone who had not typed a host yet.
+ * @param {object} rawConfig - The configuration Gladys sent.
+ * @returns {Promise<boolean>} Whether it was applied.
+ */
+async function applyConfig(rawConfig) {
+  try {
+    config = normalizeConfig(rawConfig);
+    return true;
+  } catch (error) {
+    logger.warn(`Configuration refused: ${error.message}`);
+    const message = /at least one NUT server host/i.test(error.message)
+      ? NOT_CONFIGURED
+      : {
+          en: `Invalid configuration: ${error.message}`,
+          fr: `Configuration invalide : ${error.message}`,
+        };
+    await gladys.setConnectionStatus(false, message).catch(() => {});
+    return false;
+  }
 }
 
 async function reportUnavailable(error) {
@@ -44,7 +87,6 @@ async function reportUnavailable(error) {
 gladys.onScanRequest(async () => {
   try {
     await refreshDiscovery();
-    await gladys.setConnectionStatus(true);
   } catch (error) {
     await reportUnavailable(error);
     throw error;
@@ -106,13 +148,14 @@ registerWidget(gladys, () => config);
 registerSceneActions(gladys, () => config);
 
 gladys.onConfigUpdated(async (rawConfig) => {
+  if (!(await applyConfig(rawConfig))) {
+    return;
+  }
   try {
-    config = normalizeConfig(rawConfig);
     // The servers and the refresh interval may both have changed: every device
     // is due for a fresh read on its next poll.
     resetRefreshSchedule();
     await refreshDiscovery();
-    await gladys.setConnectionStatus(true);
   } catch (error) {
     await reportUnavailable(error);
   }
@@ -120,9 +163,10 @@ gladys.onConfigUpdated(async (rawConfig) => {
 
 gladys.on('connected', async () => {
   try {
-    config = normalizeConfig(await gladys.getConfig());
+    if (!(await applyConfig(await gladys.getConfig()))) {
+      return;
+    }
     await refreshDiscovery();
-    await gladys.setConnectionStatus(true);
   } catch (error) {
     await reportUnavailable(error);
   }

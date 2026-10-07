@@ -368,7 +368,13 @@ export function buildUpsStates(gladys, _config, discovered) {
   }));
 }
 
-export async function discoverUpses(config) {
+/**
+ * Read every configured server, and say which ones did not answer.
+ * @param {object} config - The normalized integration configuration.
+ * @returns {Promise<{discovered: object[], failures: {server: object, error: Error}[]}>}
+ *   The UPS read, and the servers that failed when at least one other answered.
+ */
+export async function discoverUpsesWithFailures(config) {
   const results = await Promise.all(
     config.servers.map(async (server) => {
       try {
@@ -383,10 +389,12 @@ export async function discoverUpses(config) {
   const discovered = results.flatMap(({ server, snapshots }) =>
     snapshots.map((snapshot) => ({ server, snapshot })),
   );
-  const errors = results.filter(({ error }) => error).map(({ error }) => error);
-  if (discovered.length === 0 && errors.length === results.length) {
+  const failures = results
+    .filter(({ error }) => error)
+    .map(({ server, error }) => ({ server, error }));
+  if (discovered.length === 0 && failures.length === results.length) {
     if (results.length === 1) {
-      throw errors[0];
+      throw failures[0].error;
     }
     throw new Error(`None of the ${results.length} configured NUT servers could be reached.`);
   }
@@ -395,7 +403,16 @@ export async function discoverUpses(config) {
   logger.debug(
     `Read ${discovered.length} UPS device(s) on ${config.servers.length} NUT server(s).`,
   );
-  return discovered;
+  return { discovered, failures };
+}
+
+/**
+ * Read every configured server.
+ * @param {object} config - The normalized integration configuration.
+ * @returns {Promise<object[]>} The UPS read.
+ */
+export async function discoverUpses(config) {
+  return (await discoverUpsesWithFailures(config)).discovered;
 }
 
 /**
