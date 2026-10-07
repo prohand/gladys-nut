@@ -8,6 +8,7 @@ import {
   buildDiscoveredDevices,
   discoverUpsesWithFailures,
   forgetDevice,
+  forgetLastReads,
   resetRefreshSchedule,
   testNutConnection,
 } from './src/devices/index.js';
@@ -155,6 +156,8 @@ gladys.onConfigUpdated(async (rawConfig) => {
     // The servers and the refresh interval may both have changed: every device
     // is due for a fresh read on its next poll.
     resetRefreshSchedule();
+    // The widget shows the last read: one made against the old servers is not it.
+    forgetLastReads();
     await refreshDiscovery();
   } catch (error) {
     await reportUnavailable(error);

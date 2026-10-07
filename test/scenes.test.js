@@ -122,3 +122,17 @@ test('refuses the scene action before the configuration is loaded', async () => 
   registerSceneActions(gladys, () => undefined);
   await assert.rejects(gladys.handlers['sceneAction:get_ups_status']({ ups: 'x' }), /configured/);
 });
+
+test('get_ups_status returns exactly the outputs the manifest declares', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const manifest = JSON.parse(
+    await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
+  );
+  const declared = manifest.scene_actions
+    .find((action) => action.key === 'get_ups_status')
+    .outputs.map((output) => output.key)
+    .sort();
+  // A key the manifest declares but the handler leaves out reads as null in the
+  // scene, and a key it adds is invisible to the scene editor.
+  assert.deepEqual(Object.keys(upsStatusOutputs(discovered('OL'))).sort(), declared);
+});

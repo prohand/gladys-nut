@@ -447,7 +447,30 @@ export async function readUps(gladys, config, deviceExternalId) {
   if (!item) {
     throw new Error(`The UPS for ${deviceExternalId} is no longer exposed by the NUT servers.`);
   }
+  lastReads.set(deviceExternalId, { item, at: Date.now() });
   return item;
+}
+
+// The last read of each UPS, whoever asked for it: the core polls every created
+// UPS once a minute (for the status flags), so the widget can show that read
+// instead of opening a NUT connection on every dashboard mount.
+const lastReads = new Map();
+
+/**
+ * The last read of a UPS, when it is recent enough.
+ * @param {string} deviceExternalId - The device external_id.
+ * @param {number} maxAgeMs - The oldest read accepted.
+ * @param {number} [now] - The current timestamp, injectable for tests.
+ * @returns {object|null} The `{ server, snapshot }` pair, or null.
+ */
+export function lastReadUps(deviceExternalId, maxAgeMs, now = Date.now()) {
+  const last = lastReads.get(deviceExternalId);
+  return last && now - last.at <= maxAgeMs ? last.item : null;
+}
+
+/** Forget every remembered read (tests, configuration change). */
+export function forgetLastReads() {
+  lastReads.clear();
 }
 
 /**

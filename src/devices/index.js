@@ -7,6 +7,7 @@ import {
   discoverUpses,
   discoverUpsesWithFailures,
   forgetDevice,
+  forgetLastReads,
   resetRefreshSchedule,
   testNutConnection,
 } from './ups.js';
@@ -16,6 +17,7 @@ export {
   discoverUpses,
   discoverUpsesWithFailures,
   forgetDevice,
+  forgetLastReads,
   resetRefreshSchedule,
   testNutConnection,
 };
