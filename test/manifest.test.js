@@ -36,6 +36,18 @@ test('respects the store admission limits on the catalog identity', () => {
   assert.match(manifest.docker_image, /:[^:/]+$/, 'the image reference needs an explicit tag');
 });
 
+test('the cover image is pinned to the released tag, never to a branch', () => {
+  // A URL that never changes is a URL nobody re-fetches: pinned to `main`, a
+  // redrawn cover stayed invisible in the store and on the docs site behind
+  // whatever the caches had kept. The Release workflow rewrites it to the tag
+  // of every release, which publishes an address no cache has seen.
+  assert.match(
+    manifest.cover_image,
+    new RegExp(`/v${manifest.version.replace(/\./g, '\\.')}/cover\\.jpg$`),
+    'cover_image must point at the tag of this very version',
+  );
+});
+
 test('keeps shared configuration defaults aligned with runtime defaults', () => {
   const pollFrequency = manifest.config_schema.find((field) => field.key === 'poll_frequency');
   assert.equal(DEFAULT_CONFIG.poll_frequency, pollFrequency.default);
