@@ -40,3 +40,7 @@ third-party services and APIs this integration talks to.
 - Keep secrets (tokens, passwords, API keys) only in the integration's secret fields.
 - Give the integration accounts the least privileges they need (read-only when possible).
 - Keep Gladys and the integration up to date.
+- The NUT protocol is spoken without TLS (no `STARTTLS`): the `upsd` username and password
+  travel in clear text. Keep `upsd` on a trusted network (`LISTEN` in `upsd.conf`, port 3493
+  filtered to the Gladys host) and give Gladys a dedicated `upsd.users` account with no
+  `actions` nor `instcmds`.
