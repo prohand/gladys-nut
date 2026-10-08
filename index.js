@@ -4,15 +4,17 @@
 
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig } from './src/config.js';
+import { createConnectionStatus } from './src/connectionStatus.js';
 import {
   buildDiscoveredDevices,
   discoverUpsesWithFailures,
   forgetDevice,
   forgetLastReads,
+  readServers,
   resetRefreshSchedule,
   testNutConnection,
 } from './src/devices/index.js';
-import { pollUps } from './src/poll.js';
+import { createPollHandler, pollUps } from './src/poll.js';
 import { registerSceneActions } from './src/scenes.js';
 import { registerWidget } from './src/widget.js';
 
@@ -20,35 +22,39 @@ const gladys = new GladysIntegration();
 // Null until a configuration with at least one server has been read: the
 // handlers below say so instead of failing on `undefined`.
 let config = null;
+// One status for every server: a poll writing the status of its own server
+// made it blink between two servers (see src/connectionStatus.js).
+const status = createConnectionStatus(gladys, logger);
+
+// A rejected promise nobody awaits (a handler of a future SDK, a timer) would
+// end the process under Node's default policy, taking every UPS reading and
+// the scene triggers down with it. Log it and keep running; real exceptions
+// still crash, so a corrupted state is never silently carried on.
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', reason);
+});
 
 const NOT_CONFIGURED = {
   en: 'No NUT server configured yet: fill in the host of the first server, then save.',
   fr: 'Aucun serveur NUT configuré : renseignez l’hôte du premier serveur, puis enregistrez.',
 };
 
-async function refreshDiscovery() {
-  const { discovered, failures } = await discoverUpsesWithFailures(config);
-  await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config, discovered));
-  await reportDiscovered(failures);
-  return discovered;
-}
-
 /**
- * Connected — and, when one of several servers did not answer, say which: a
- * plain "connected" hid a second UPS host that was down.
- * @param {{server: {host: string, port: number}, error: Error}[]} failures - Servers that failed.
- * @returns {Promise<void>} Resolves once the status is stored.
+ * Read every server, record each outcome in the connection status — which
+ * names the servers that did not answer — and publish what was found. When no
+ * server answered, the Discovery tab is left as it was.
+ * @returns {Promise<object[]>} The UPS read.
  */
-async function reportDiscovered(failures) {
-  if (failures.length === 0) {
-    await gladys.setConnectionStatus(true);
-    return;
+async function refreshDiscovery() {
+  const results = await readServers(config);
+  status.record(results);
+  await status.report({ force: true });
+  if (results.every(({ error }) => error)) {
+    return [];
   }
-  const names = failures.map(({ server }) => `${server.host}:${server.port}`).join(', ');
-  await gladys.setConnectionStatus(true, {
-    en: `Connected, but ${failures.length} NUT server(s) did not answer: ${names}.`,
-    fr: `Connecté, mais ${failures.length} serveur(s) NUT n’ont pas répondu : ${names}.`,
-  });
+  const { discovered } = await discoverUpsesWithFailures(config, results);
+  await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config, discovered));
+  return discovered;
 }
 
 /**
@@ -61,6 +67,7 @@ async function reportDiscovered(failures) {
 async function applyConfig(rawConfig) {
   try {
     config = normalizeConfig(rawConfig);
+    status.setServers(config.servers);
     return true;
   } catch (error) {
     logger.warn(`Configuration refused: ${error.message}`);
@@ -71,59 +78,40 @@ async function applyConfig(rawConfig) {
           fr: `Configuration invalide : ${error.message}`,
         };
     await gladys.setConnectionStatus(false, message).catch(() => {});
+    status.invalidate();
     return false;
   }
 }
 
-async function reportUnavailable(error) {
-  logger.error('NUT connection failed', error);
-  await gladys
-    .setConnectionStatus(false, {
-      en: `Cannot reach the NUT server: ${error.message}`,
-      fr: `Impossible de joindre le serveur NUT : ${error.message}`,
-    })
-    .catch(() => {});
+// The NUT servers' failures are in the connection status already: what lands
+// here failed elsewhere (Gladys itself, most of the time).
+function logFailure(context, error) {
+  logger.error(`${context} failed: ${error.message}`);
 }
 
 gladys.onScanRequest(async () => {
   try {
     await refreshDiscovery();
   } catch (error) {
-    await reportUnavailable(error);
+    logFailure('Scan', error);
     throw error;
   }
 });
 
-gladys.onPoll(async (device) => {
-  if (!config) {
-    return;
-  }
-  try {
-    // Gladys polls every minute: each poll reads the UPS for the scene
-    // triggers, but the readings and the connection status are only written
-    // once per configured refresh interval.
-    const { refreshed } = await pollUps(gladys, config, device.external_id);
-    if (refreshed) {
-      await gladys.setConnectionStatus(true);
-    }
-  } catch (error) {
-    await reportUnavailable(error);
-    throw error;
-  }
-});
+// Gladys polls every minute: each poll reads the UPS for the scene triggers,
+// the readings are only written once per configured refresh interval, and the
+// connection status only when a server's outcome changes.
+gladys.onPoll(createPollHandler({ gladys, getConfig: () => config, status }));
 
 gladys.onAction('test_connection', async () => {
   if (!config) {
     return NOT_CONFIGURED;
   }
-  try {
-    const message = await testNutConnection(config);
-    await gladys.setConnectionStatus(true);
-    return message;
-  } catch (error) {
-    await reportUnavailable(error);
-    throw error;
-  }
+  const results = await readServers(config);
+  status.record(results);
+  await status.report({ force: true });
+  // Throws when no server answered: the screen shows the action in red.
+  return testNutConnection(config, results);
 });
 
 // Gladys drops the states of a device that does not exist yet, while the
@@ -160,7 +148,7 @@ gladys.onConfigUpdated(async (rawConfig) => {
     forgetLastReads();
     await refreshDiscovery();
   } catch (error) {
-    await reportUnavailable(error);
+    logFailure('Discovery after a configuration change', error);
   }
 });
 
@@ -171,7 +159,7 @@ gladys.on('connected', async () => {
     }
     await refreshDiscovery();
   } catch (error) {
-    await reportUnavailable(error);
+    logFailure('Discovery on connection', error);
   }
 });
 

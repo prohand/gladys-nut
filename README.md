@@ -37,7 +37,7 @@ Chaque mesure publiée est une ligne d’historique dans la base de Gladys, et u
 
 Le bouton **Tester la connexion NUT** vérifie l’accès au serveur et affiche le nombre d’onduleurs détectés. En cas d’échec, l’état de connexion de l’intégration explique l’erreur remontée par le serveur ou le réseau.
 
-Le serveur NUT doit autoriser les connexions provenant de l’environnement Gladys. Consultez la [spécification réseau NUT](https://networkupstools.org/docs/developer-guide.chunked/net-protocol.html) et votre configuration `upsd.conf` / `upsd.users` pour adapter les droits et les ACL à votre installation.
+Le serveur NUT doit autoriser les connexions provenant de l’environnement Gladys. Consultez la [spécification réseau NUT](https://networkupstools.org/docs/developer-guide.chunked/net-protocol.html) et votre configuration `upsd.conf` / `upsd.users` pour adapter les droits et les ACL à votre installation. Le protocole NUT est utilisé sans TLS : identifiants et mesures circulent en clair, gardez `upsd` sur un réseau de confiance (`LISTEN`, pare-feu, utilisateur dédié en lecture seule — voir `docs/fr.md`).
 
 ## Architecture
 

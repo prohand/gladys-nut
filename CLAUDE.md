@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Gladys Assistant **external integration** (Node 20+, ESM, no build step, one runtime
+A Gladys Assistant **external integration** (Node 22+, ESM, no build step, one runtime
 dependency: `@gladysassistant/integration-sdk`) that reads UPS data from one to five
 [Network UPS Tools](https://networkupstools.org/) servers (`upsd`, TCP 3493) and publishes one
 Gladys device per UPS. It is **read-only**: only `LIST UPS` and `LIST VAR` are ever sent, never an
@@ -36,10 +36,11 @@ builds). Never bump versions by hand.
 ```
 index.js               SDK wiring only (handlers registered before connect())
 src/config.js          5 server slots (server_N_host/port/username/password) -> config.servers
-src/nut/client.js      minimal NUT TCP client: one short connection per request, quoting, auth
+src/nut/client.js      minimal NUT TCP client: one short connection per read, quoting, auth
 src/devices/ups.js     variables -> features, discovery, refresh schedule, state dedupe
 src/devices/status.js  parse `ups.status` flags (OL, OB, LB, RB...) into a readable state
 src/poll.js            one core poll: read UPS, fire scene events, publish readings when due
+src/connectionStatus.js one status aggregated over every server (sent on change only)
 src/scenes.js          scene triggers (power_lost, power_restored, battery_low, battery_replace)
                        and scene action get_ups_status
 src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
@@ -61,6 +62,14 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
   Do not remove either mechanism.
 - **Every feature declares `min`/`max`** (NOT NULL in Gladys, HTTP 422 otherwise). They are
   descriptive only: values outside are never clamped.
+- **One connection per read**: a poll reads its own UPS (`LIST UPS` + one `LIST VAR`) on one
+  authenticated connection; a scan reads a server on one connection. A malformed answer fails
+  the request (`consume` must never throw from the socket `data` event: it would kill the
+  process).
+- **The connection status is aggregated** (`src/connectionStatus.js`): connected while one
+  server answers, the failing ones named; written only when it changes, a failure logged once.
+  A UPS whose server left the configuration is not read at all (`SERVER_REMOVED`), and neither
+  it nor a vanished UPS (`UPS_GONE`) touches the status.
 - **Every request is bounded by `timeout`**, not only the TCP connection: an upsd that accepts the
   connection then stays silent fails the request instead of freezing the poll.
 - **A device added in Gladys is read at once** (`onDeviceCreated` / `onDeviceUpdated` →

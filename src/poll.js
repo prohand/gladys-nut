@@ -7,7 +7,13 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
-import { isRefreshDue, publishUpsReadings, readUps } from './devices/ups.js';
+import {
+  isRefreshDue,
+  publishUpsReadings,
+  readUps,
+  SERVER_REMOVED,
+  UPS_GONE,
+} from './devices/ups.js';
 import { watchUpsStatus } from './scenes.js';
 import { UPS_WIDGET } from './widget.js';
 
@@ -37,4 +43,53 @@ export async function pollUps(gladys, config, deviceExternalId) {
     await publishUpsReadings(gladys, config, item);
   }
   return { item, events, refreshed };
+}
+
+/**
+ * The handler of the core polls: reads the UPS, keeps the aggregated
+ * connection status up to date, and reports a device that can no longer be
+ * read once instead of every minute.
+ * @param {object} options - Dependencies.
+ * @param {object} options.gladys - The SDK instance.
+ * @param {() => object|null} options.getConfig - The current normalized configuration.
+ * @param {object} options.status - The connection status tracker (src/connectionStatus.js).
+ * @param {object} [options.log] - A logger (warn, error); the module logger by default.
+ * @param {Function} [options.poll] - The read, `pollUps` by default (tests).
+ * @returns {(device: {external_id: string}) => Promise<void>} The handler.
+ */
+export function createPollHandler({ gladys, getConfig, status, log = logger, poll = pollUps }) {
+  // Device problems already logged, so a poll a minute does not repeat them.
+  const reported = new Map();
+
+  return async (device) => {
+    const config = getConfig();
+    if (!config) {
+      return;
+    }
+    const deviceExternalId = device.external_id;
+    try {
+      const { item } = await poll(gladys, config, deviceExternalId);
+      reported.delete(deviceExternalId);
+      status.serverOk(item.server);
+      await status.report();
+    } catch (error) {
+      if (error.code === SERVER_REMOVED || error.code === UPS_GONE) {
+        // A device problem, not a server one: its server (if any) answered,
+        // or is not configured at all. Nothing to tell the other servers'
+        // status, and nothing to retry until the configuration changes.
+        if (reported.get(deviceExternalId) !== error.message) {
+          reported.set(deviceExternalId, error.message);
+          log.warn(error.message);
+        }
+        return;
+      }
+      if (error.server) {
+        status.serverFailed(error.server, error);
+        await status.report();
+      } else {
+        log.error(`Poll of ${deviceExternalId} failed: ${error.message}`);
+      }
+      throw error;
+    }
+  };
 }

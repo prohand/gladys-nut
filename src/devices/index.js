@@ -8,8 +8,11 @@ import {
   discoverUpsesWithFailures,
   forgetDevice,
   forgetLastReads,
+  readServers,
   resetRefreshSchedule,
+  SERVER_REMOVED,
   testNutConnection,
+  UPS_GONE,
 } from './ups.js';
 
 export {
@@ -18,6 +21,9 @@ export {
   discoverUpsesWithFailures,
   forgetDevice,
   forgetLastReads,
+  readServers,
   resetRefreshSchedule,
+  SERVER_REMOVED,
   testNutConnection,
+  UPS_GONE,
 };

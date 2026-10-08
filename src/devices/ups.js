@@ -14,7 +14,7 @@ import {
   DEVICE_FEATURE_TYPES,
   DEVICE_FEATURE_UNITS,
 } from '@gladysassistant/integration-sdk';
-import { getNutSnapshot } from '../nut/client.js';
+import { getNutSnapshot, getNutUpsSnapshot } from '../nut/client.js';
 
 const DEVICE_TYPE = 'nut-ups';
 const logger = createLogger({ name: DEVICE_TYPE });
@@ -369,23 +369,37 @@ export function buildUpsStates(gladys, _config, discovered) {
 }
 
 /**
- * Read every configured server, and say which ones did not answer.
+ * Read every configured server, never throwing: each server's outcome is
+ * reported, so the connection status can name the ones that failed.
  * @param {object} config - The normalized integration configuration.
- * @returns {Promise<{discovered: object[], failures: {server: object, error: Error}[]}>}
- *   The UPS read, and the servers that failed when at least one other answered.
+ * @returns {Promise<{server: object, snapshots: object[], error: Error|null}[]>}
+ *   One result per configured server.
  */
-export async function discoverUpsesWithFailures(config) {
-  const results = await Promise.all(
+export async function readServers(config) {
+  return Promise.all(
     config.servers.map(async (server) => {
       try {
         const snapshots = await getNutSnapshot({ ...server, timeout: config.timeout });
         return { server, snapshots, error: null };
       } catch (error) {
-        logger.error(`NUT server ${server.host}:${server.port} is unavailable`, error);
+        // Debug only: the caller reports the failure (connection status, one
+        // log line per change), a second error line here doubled every report.
+        logger.debug(`NUT server ${server.host}:${server.port} is unavailable: ${error.message}`);
         return { server, snapshots: [], error };
       }
     }),
   );
+}
+
+/**
+ * Read every configured server, and say which ones did not answer.
+ * @param {object} config - The normalized integration configuration.
+ * @param {object[]} [results] - The outcome of `readServers`, when already read.
+ * @returns {Promise<{discovered: object[], failures: {server: object, error: Error}[]}>}
+ *   The UPS read, and the servers that failed when at least one other answered.
+ */
+export async function discoverUpsesWithFailures(config, results) {
+  results ??= await readServers(config);
   const discovered = results.flatMap(({ server, snapshots }) =>
     snapshots.map((snapshot) => ({ server, snapshot })),
   );
@@ -398,8 +412,6 @@ export async function discoverUpsesWithFailures(config) {
     }
     throw new Error(`None of the ${results.length} configured NUT servers could be reached.`);
   }
-  // Every poll goes through here once a minute: debug level keeps the logs
-  // readable, the scan result is reported by the connection status.
   logger.debug(
     `Read ${discovered.length} UPS device(s) on ${config.servers.length} NUT server(s).`,
   );
@@ -415,40 +427,88 @@ export async function discoverUpses(config) {
   return (await discoverUpsesWithFailures(config)).discovered;
 }
 
+// Codes of the errors that concern one device, not a NUT server: the
+// connection status must not report its server as unreachable for them.
+export const SERVER_REMOVED = 'NUT_SERVER_REMOVED';
+export const UPS_GONE = 'NUT_UPS_GONE';
+
+function deviceError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
 /**
  * The configured servers that may hold a device: its external id starts with
  * the host and port of its server, so the other servers need not be queried.
- * Falls back to every server when none matches (e.g. a renamed host).
+ * Empty when none matches — a server removed from the configuration (or
+ * renamed) while its UPS still exists in Gladys: querying every other server
+ * each minute for a UPS they never had only ended in a misleading
+ * "Cannot reach the NUT server".
  * @param {object} gladys - The SDK instance.
  * @param {object} config - The normalized integration configuration.
  * @param {string} deviceExternalId - The device external_id.
  * @returns {object[]} The servers to query.
  */
 export function serversOfDevice(gladys, config, deviceExternalId) {
-  const matching = config.servers.filter((server) =>
-    deviceExternalId.startsWith(gladys.externalIds(DEVICE_TYPE, platformId(server, '')).device),
+  return config.servers.filter((server) =>
+    deviceExternalId.startsWith(serverIdPrefix(gladys, server)),
   );
-  return matching.length > 0 ? matching : config.servers;
+}
+
+function serverIdPrefix(gladys, server) {
+  return gladys.externalIds(DEVICE_TYPE, platformId(server, '')).device;
+}
+
+function upsNameOnServer(gladys, server, deviceExternalId) {
+  try {
+    return decodeURIComponent(deviceExternalId.slice(serverIdPrefix(gladys, server).length));
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Read one UPS from its NUT server.
+ * Read one UPS from its NUT server: one connection, LIST UPS then the LIST VAR
+ * of that UPS only.
  * @param {object} gladys - The SDK instance.
  * @param {object} config - The normalized integration configuration.
  * @param {string} deviceExternalId - The device external_id.
- * @returns {Promise<object>} The `{ server, snapshot }` pair of the UPS.
+ * @returns {Promise<object>} The `{ server, snapshot }` pair of the UPS. A
+ *   server failure is thrown with the failing `server` attached; a device
+ *   problem with a `code` (SERVER_REMOVED, UPS_GONE).
  */
 export async function readUps(gladys, config, deviceExternalId) {
   const servers = serversOfDevice(gladys, config, deviceExternalId);
-  const discovered = await discoverUpses({ ...config, servers });
-  const item = discovered.find(
-    (candidate) => upsIds(gladys, candidate).device === deviceExternalId,
-  );
-  if (!item) {
-    throw new Error(`The UPS for ${deviceExternalId} is no longer exposed by the NUT servers.`);
+  if (servers.length === 0) {
+    throw deviceError(
+      SERVER_REMOVED,
+      `The UPS ${deviceExternalId} belongs to a NUT server that is no longer configured: add that server back, or delete the device in Gladys.`,
+    );
   }
-  lastReads.set(deviceExternalId, { item, at: Date.now() });
-  return item;
+  let failure = null;
+  // Usually one server; two only when a host name happens to prefix another.
+  for (const server of servers) {
+    const name = upsNameOnServer(gladys, server, deviceExternalId);
+    if (!name) {
+      continue;
+    }
+    try {
+      const snapshot = await getNutUpsSnapshot({ ...server, timeout: config.timeout }, name);
+      const item = snapshot && { server, snapshot };
+      if (item && upsIds(gladys, item).device === deviceExternalId) {
+        lastReads.set(deviceExternalId, { item, at: Date.now() });
+        return item;
+      }
+    } catch (error) {
+      failure ??= Object.assign(error, { server });
+    }
+  }
+  if (failure) {
+    throw failure;
+  }
+  throw deviceError(
+    UPS_GONE,
+    `The UPS for ${deviceExternalId} is no longer exposed by the NUT servers.`,
+  );
 }
 
 // The last read of each UPS, whoever asked for it: the core polls every created
@@ -500,13 +560,20 @@ export async function publishUpsReadings(gladys, config, item, now = Date.now())
   return states.length;
 }
 
-export async function testNutConnection(config) {
-  const discovered = await discoverUpses(config);
+/**
+ * The answer of "Test the connection".
+ * @param {object} config - The normalized integration configuration.
+ * @param {object[]} [results] - The outcome of `readServers`, when already read.
+ * @returns {Promise<object>} A `{ en, fr }` message; throws when no server answered.
+ */
+export async function testNutConnection(config, results) {
+  const { discovered, failures } = await discoverUpsesWithFailures(config, results);
   const names = discovered
     .map(({ server, snapshot }) => `${snapshot.name}@${server.host}`)
     .join(', ');
+  const failed = failures.map(({ server }) => `${server.host}:${server.port}`).join(', ');
   return {
-    en: `${discovered.length} UPS device(s) found${names ? `: ${names}.` : '.'}`,
-    fr: `${discovered.length} onduleur(s) détecté(s)${names ? ` : ${names}.` : '.'}`,
+    en: `${discovered.length} UPS device(s) found${names ? `: ${names}.` : '.'}${failed ? ` Not answering: ${failed}.` : ''}`,
+    fr: `${discovered.length} onduleur(s) détecté(s)${names ? ` : ${names}.` : '.'}${failed ? ` Sans réponse : ${failed}.` : ''}`,
   };
 }

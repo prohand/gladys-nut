@@ -3,8 +3,9 @@
 //
 // NUT servers speak a line-based protocol on TCP port 3493. This module only
 // implements the read-only commands required by the integration: LIST UPS and
-// LIST VAR. Each operation opens a short-lived connection, which avoids stale
-// socket state after a NUT server restart.
+// LIST VAR. Each read (a whole server, or one UPS) opens one short-lived
+// connection carrying all its requests, which avoids stale socket state after
+// a NUT server restart without paying a handshake and a login per UPS.
 // -----------------------------------------------------------------------------
 
 import net from 'node:net';
@@ -167,6 +168,19 @@ class NutConnection {
   }
 
   consume(chunk) {
+    // Called from the socket 'data' event: an exception thrown here is not
+    // caught by anyone and kills the whole process. A malformed answer (an
+    // unterminated quote from a buggy driver) must fail the pending request,
+    // not the integration.
+    try {
+      this.consumeLines(chunk);
+    } catch (error) {
+      this.fail(error);
+      this.socket.destroy();
+    }
+  }
+
+  consumeLines(chunk) {
     this.buffer += chunk;
     const lines = this.buffer.split('\n');
     this.buffer = lines.pop();
@@ -216,37 +230,69 @@ async function withNutConnection(config, work) {
   }
 }
 
-export async function listUps(config) {
-  return withNutConnection(config, async (connection) => {
-    const lines = await connection.list('LIST UPS');
-    return lines.flatMap((line) => {
-      const tokens = tokenizeNutLine(line);
-      if (tokens[0] !== 'UPS' || tokens.length < 2) {
-        return [];
-      }
-      return [{ name: tokens[1], description: tokens.slice(2).join(' ') || tokens[1] }];
-    });
+async function readUpsList(connection) {
+  const lines = await connection.list('LIST UPS');
+  return lines.flatMap((line) => {
+    const tokens = tokenizeNutLine(line);
+    if (tokens[0] !== 'UPS' || tokens.length < 2) {
+      return [];
+    }
+    return [{ name: tokens[1], description: tokens.slice(2).join(' ') || tokens[1] }];
   });
+}
+
+async function readUpsVariables(connection, upsName) {
+  const lines = await connection.list(`LIST VAR ${quoteNutArgument(upsName)}`);
+  const variables = new Map();
+  for (const line of lines) {
+    const tokens = tokenizeNutLine(line);
+    if (tokens[0] === 'VAR' && tokens[1] === upsName && tokens.length >= 4) {
+      variables.set(tokens[2], tokens.slice(3).join(' '));
+    }
+  }
+  return variables;
+}
+
+export async function listUps(config) {
+  return withNutConnection(config, readUpsList);
 }
 
 export async function listUpsVariables(config, upsName) {
+  return withNutConnection(config, (connection) => readUpsVariables(connection, upsName));
+}
+
+/**
+ * Read every UPS of a server. One connection carries every request: upsd
+ * answers them in order, and a connection per UPS meant as many TCP handshakes
+ * and USERNAME/PASSWORD exchanges.
+ * @param {object} config - `{ host, port, username, password, timeout }`.
+ * @returns {Promise<object[]>} `{ name, description, variables }` per UPS.
+ */
+export async function getNutSnapshot(config) {
   return withNutConnection(config, async (connection) => {
-    const lines = await connection.list(`LIST VAR ${quoteNutArgument(upsName)}`);
-    const variables = new Map();
-    for (const line of lines) {
-      const tokens = tokenizeNutLine(line);
-      if (tokens[0] === 'VAR' && tokens[1] === upsName && tokens.length >= 4) {
-        variables.set(tokens[2], tokens.slice(3).join(' '));
-      }
+    const snapshots = [];
+    for (const ups of await readUpsList(connection)) {
+      snapshots.push({ ...ups, variables: await readUpsVariables(connection, ups.name) });
     }
-    return variables;
+    return snapshots;
   });
 }
 
-export async function getNutSnapshot(config) {
-  const upses = await listUps(config);
-  const snapshots = await Promise.all(
-    upses.map(async (ups) => ({ ...ups, variables: await listUpsVariables(config, ups.name) })),
-  );
-  return snapshots;
+/**
+ * Read one UPS of a server, on a single connection. LIST UPS comes first: it
+ * tells a UPS removed from upsd apart from a server failure, and carries the
+ * description the device name falls back on.
+ * @param {object} config - `{ host, port, username, password, timeout }`.
+ * @param {string} upsName - The UPS name on that server.
+ * @returns {Promise<object|null>} `{ name, description, variables }`, or null
+ *   when the server no longer exposes that UPS.
+ */
+export async function getNutUpsSnapshot(config, upsName) {
+  return withNutConnection(config, async (connection) => {
+    const ups = (await readUpsList(connection)).find(({ name }) => name === upsName);
+    if (!ups) {
+      return null;
+    }
+    return { ...ups, variables: await readUpsVariables(connection, ups.name) };
+  });
 }
