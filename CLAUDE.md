@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Gladys Assistant **external integration** (Node 20+, ESM, no build step, one runtime
+A Gladys Assistant **external integration** (Node 22+, ESM, no build step, one runtime
 dependency: `@gladysassistant/integration-sdk`) that reads UPS data from one to five
 [Network UPS Tools](https://networkupstools.org/) servers (`upsd`, TCP 3493) and publishes one
 Gladys device per UPS. It is **read-only**: only `LIST UPS` and `LIST VAR` are ever sent, never an
