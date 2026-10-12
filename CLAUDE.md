@@ -37,7 +37,7 @@ builds). Never bump versions by hand.
 index.js               SDK wiring only (handlers registered before connect())
 src/config.js          5 server slots (server_N_host/port/username/password) -> config.servers
 src/nut/client.js      minimal NUT TCP client: one short connection per read, quoting, auth
-src/devices/ups.js     variables -> features, discovery, refresh schedule, state dedupe
+src/devices/ups.js     variables -> features, discovery, refresh schedule, state publication
 src/devices/status.js  parse `ups.status` flags (OL, OB, LB, RB...) into a readable state
 src/poll.js            one core poll: read UPS, fire scene events, publish readings when due
 src/connectionStatus.js one status aggregated over every server (sent on change only)
@@ -57,8 +57,10 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
   Gladys accepts — any other value rejects the whole discovery). Every poll reads `ups.status`
   for the scene triggers; readings are only published once per configured interval
   (`isRefreshDue`, 60–86 400 s, default 300 s).
-- **History volume is a feature.** Unchanged states are skipped (`isStatePublishable`) but
-  republished at least once an hour (`STATE_HEARTBEAT`) so Gladys does not show them as stale.
+- **History volume is a feature.** Unchanged states are skipped (the SDK's
+  `publishChangedStates`) but republished at least once an hour (`STATE_HEARTBEAT`, its
+  `heartbeat`) so Gladys does not show them as stale. A configuration change forgets them all
+  (`resetRefreshSchedule(gladys)`).
   Do not remove either mechanism.
 - **Every feature declares `min`/`max`** (NOT NULL in Gladys, HTTP 422 otherwise). They are
   descriptive only: values outside are never clamped.
@@ -73,8 +75,8 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
 - **Every request is bounded by `timeout`**, not only the TCP connection: an upsd that accepts the
   connection then stays silent fails the request instead of freezing the poll.
 - **A device added in Gladys is read at once** (`onDeviceCreated` / `onDeviceUpdated` →
-  `forgetDevice()` + `pollUps()`): Gladys drops states sent before the device exists, while the
-  dedupe recorded them as published.
+  `forgetDevice()` + `pollUps()`): Gladys drops states sent before the device exists; the SDK
+  forgets what it published for the device before the handler runs, so that read sends everything.
 - **Category choices are deliberate** (comments in `ups.js`): `ups.load` uses
   `counter-sensor/integer` so the front shows its name instead of "Unknown"; apparent power is
   `energy-sensor/power` with a VA unit.
@@ -92,9 +94,9 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
 ## Testing
 
 `test/helpers/fakeNut.js` is a real TCP server speaking the NUT protocol on an ephemeral port;
-`test/helpers/fakeGladys.js` stands in for the SDK. Module-level maps (`lastRefreshAt`,
-`lastPublishedStates`, the last status flags) leak between tests: reset them
-(`resetRefreshSchedule()` and the scene helpers) in `beforeEach`.
+`test/helpers/fakeGladys.js` stands in for the SDK (its `publishChangedStates` reproduces the SDK
+deduplication, per fake). Module-level maps (`lastRefreshAt`, the last status flags) leak between
+tests: reset them (`resetRefreshSchedule()` and the scene helpers) in `beforeEach`.
 
 ## Conventions
 

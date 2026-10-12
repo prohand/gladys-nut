@@ -114,9 +114,10 @@ gladys.onAction('test_connection', async () => {
   return testNutConnection(config, results);
 });
 
-// Gladys drops the states of a device that does not exist yet, while the
-// publisher records them as published: read a UPS the moment it is added (or
-// updated from the Discovery tab), with everything it reports.
+// Gladys drops the states of a device that does not exist yet (the SDK forgets
+// what it published for the device before this handler runs): read a UPS the
+// moment it is added (or updated from the Discovery tab), with everything it
+// reports.
 async function readNewDevice(device) {
   forgetDevice(device.external_id);
   if (!config) {
@@ -142,8 +143,8 @@ gladys.onConfigUpdated(async (rawConfig) => {
   }
   try {
     // The servers and the refresh interval may both have changed: every device
-    // is due for a fresh read on its next poll.
-    resetRefreshSchedule();
+    // is due for a fresh read on its next poll, with every value republished.
+    resetRefreshSchedule(gladys);
     // The widget shows the last read: one made against the old servers is not it.
     forgetLastReads();
     await refreshDiscovery();
