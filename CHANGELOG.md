@@ -6,6 +6,11 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- `@gladysassistant/integration-sdk` updated to 0.15.0.
+- Unchanged readings are now skipped by the SDK's `publishChangedStates` (same hourly heartbeat), and the one-minute core poll tick comes from the SDK's `DEVICE_POLL_FREQUENCIES`.
+
 ## [2.2.1] - 2026-10-08
 
 ### Fixed

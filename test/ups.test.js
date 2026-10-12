@@ -8,9 +8,8 @@ import {
   CORE_POLL_FREQUENCY,
   forgetDevice,
   isRefreshDue,
-  isStatePublishable,
   markRefreshed,
-  markStatePublished,
+  publishUpsReadings,
   resetRefreshSchedule,
   STATE_HEARTBEAT,
 } from '../src/devices/ups.js';
@@ -185,25 +184,28 @@ test('reads the NUT server only once per configured refresh interval', () => {
   assert.equal(isRefreshDue(hourly, externalId, 60 * 1000), true);
 });
 
-test('writes a history row only when the reading changed', () => {
-  const state = { device_feature_external_id: 'nut-ups:ups:battery-charge', state: 92 };
-  resetRefreshSchedule();
+test('writes a history row only when the reading changed', async () => {
+  const gladys = createFakeGladys();
+  const ups = discovered();
+  resetRefreshSchedule(gladys);
 
-  assert.equal(isStatePublishable(state, 0), true);
-  markStatePublished(state, 0);
+  const first = await publishUpsReadings(gladys, config, ups, 0);
+  assert.ok(first > 0);
+  assert.equal(gladys.published.length, first);
 
-  // Same value on the next read: nothing new to store.
-  assert.equal(isStatePublishable({ ...state }, 60 * 1000), false);
+  // Same values on the next read: nothing new to store.
+  assert.equal(await publishUpsReadings(gladys, config, ups, 60 * 1000), 0);
   // A different value is always published, however small the change.
-  assert.equal(isStatePublishable({ ...state, state: 91.5 }, 60 * 1000), true);
+  ups.snapshot.variables.set('battery.charge', '91.5');
+  assert.equal(await publishUpsReadings(gladys, config, ups, 120 * 1000), 1);
   // An unchanged value is refreshed at least once per heartbeat, so the
   // front-end never displays the feature as stale.
-  assert.equal(isStatePublishable({ ...state }, STATE_HEARTBEAT - 1), false);
-  assert.equal(isStatePublishable({ ...state }, STATE_HEARTBEAT), true);
+  assert.ok(gladys.changedStatesCalls.every(({ heartbeat }) => heartbeat === STATE_HEARTBEAT));
+  assert.equal(STATE_HEARTBEAT, 60 * 60 * 1000);
 
   // A configuration change republishes everything.
-  resetRefreshSchedule();
-  assert.equal(isStatePublishable({ ...state }, 60 * 1000), true);
+  resetRefreshSchedule(gladys);
+  assert.equal(await publishUpsReadings(gladys, config, ups, 180 * 1000), first);
 });
 
 test('does not create text-only NUT sensors in the discovery payload', () => {
@@ -243,18 +245,24 @@ test('keeps identical UPS names independent across NUT servers', () => {
   assert.match(devices[1].name, /nut-two\.local/);
 });
 
-test('a device added in Gladys republishes everything on its next read', () => {
+test('a device added in Gladys republishes everything on its next read', async () => {
   resetRefreshSchedule();
-  const mine = { device_feature_external_id: 'nut-ups:ups:battery-charge', state: 92 };
-  const other = { device_feature_external_id: 'nut-ups:ups-b:battery-charge', state: 80 };
-  markStatePublished(mine, 0);
-  markStatePublished(other, 0);
-  markRefreshed('nut-ups:ups', 0);
+  const gladys = createFakeGladys();
+  const mine = discovered(serverOne);
+  const other = discovered(serverTwo);
+  const mineId = gladys.externalIds('nut-ups', 'nut-one.local-3493-main-ups').device;
+  const otherId = gladys.externalIds('nut-ups', 'nut-two.local-3493-main-ups').device;
+  await publishUpsReadings(gladys, config, mine, 0);
+  const otherCount = await publishUpsReadings(gladys, config, other, 0);
 
-  // The states published before the device existed were dropped by Gladys.
-  forgetDevice('nut-ups:ups');
-  assert.equal(isStatePublishable({ ...mine }, 60 * 1000), true);
-  assert.equal(isRefreshDue({ poll_frequency: 300 }, 'nut-ups:ups', 60 * 1000), true);
-  // The other UPS keeps its own schedule.
-  assert.equal(isStatePublishable({ ...other }, 60 * 1000), false);
+  // The states published before the device existed were dropped by Gladys:
+  // the SDK forgets them when the device is created, then our handler runs.
+  gladys.forgetPublishedStates(mineId);
+  forgetDevice(mineId);
+  assert.equal(isRefreshDue(config, mineId, 60 * 1000), true);
+  assert.ok((await publishUpsReadings(gladys, config, mine, 60 * 1000)) > 0);
+  // The other UPS keeps its own schedule and its own memory.
+  assert.ok(otherCount > 0);
+  assert.equal(isRefreshDue(config, otherId, 60 * 1000), false);
+  assert.equal(await publishUpsReadings(gladys, config, other, 60 * 1000), 0);
 });

@@ -13,6 +13,7 @@ import {
   DEVICE_FEATURE_CATEGORIES,
   DEVICE_FEATURE_TYPES,
   DEVICE_FEATURE_UNITS,
+  DEVICE_POLL_FREQUENCIES,
 } from '@gladysassistant/integration-sdk';
 import { getNutSnapshot, getNutUpsSnapshot } from '../nut/client.js';
 
@@ -168,19 +169,17 @@ const NUMERIC_VARIABLES = [
 // those polls only watch `ups.status` for the scene triggers. The faster core
 // frequencies are deliberately never used: they would double the number of
 // history rows written into the Gladys database for readings that move slowly.
-export const CORE_POLL_FREQUENCY = 60 * 1000;
+export const CORE_POLL_FREQUENCY = DEVICE_POLL_FREQUENCIES.EVERY_MINUTES;
 
 // A published state that repeats the previous one is still a full row in the
-// Gladys history table. Unchanged values are therefore skipped, but not
-// forever: republishing at least once an hour keeps the device from looking
-// stale in the front-end and keeps the charts anchored over long flat periods.
+// Gladys history table. Unchanged values are therefore skipped (the SDK's
+// publishChangedStates), but not forever: republishing at least once an hour
+// keeps the device from looking stale in the front-end and keeps the charts
+// anchored over long flat periods.
 export const STATE_HEARTBEAT = 60 * 60 * 1000;
 
 // Timestamp of the last NUT read published for a device external_id.
 const lastRefreshAt = new Map();
-
-// Last state published for a feature external_id: { value, at }.
-const lastPublishedStates = new Map();
 
 /**
  * Whether a core poll must write the UPS readings to the Gladys history, or
@@ -203,31 +202,6 @@ export function isRefreshDue(config, deviceExternalId, now = Date.now()) {
 }
 
 /**
- * Whether a freshly read state is worth writing to the Gladys history, i.e.
- * whether it carries something the previous published state does not.
- * @param {object} state - A { device_feature_external_id, state } payload.
- * @param {number} [now] - The current timestamp, injectable for tests.
- * @returns {boolean} True when the state has to be published.
- */
-export function isStatePublishable(state, now = Date.now()) {
-  const last = lastPublishedStates.get(state.device_feature_external_id);
-  if (last === undefined) {
-    return true;
-  }
-  return last.value !== state.state || now - last.at >= STATE_HEARTBEAT;
-}
-
-/**
- * Record that a state has just been published for its feature.
- * @param {object} state - A { device_feature_external_id, state } payload.
- * @param {number} [now] - The current timestamp, injectable for tests.
- * @returns {void}
- */
-export function markStatePublished(state, now = Date.now()) {
-  lastPublishedStates.set(state.device_feature_external_id, { value: state.state, at: now });
-}
-
-/**
  * Record that the UPS behind a device external_id has just been read.
  * @param {string} deviceExternalId - The refreshed device external_id.
  * @param {number} [now] - The current timestamp, injectable for tests.
@@ -238,33 +212,28 @@ export function markRefreshed(deviceExternalId, now = Date.now()) {
 }
 
 /**
- * Forget what was published for one device, so its next read publishes every
- * value again. Gladys drops the states of a device that does not exist yet,
- * while this module records them as published: without this, a UPS added
- * from the Discovery tab stayed empty until a value changed or the hourly
- * heartbeat.
+ * Make the next read of one device due at once. Gladys drops the states of a
+ * device that does not exist yet: a UPS added from the Discovery tab has to be
+ * read right away — the SDK has already forgotten what it published for it,
+ * so that read publishes every value again.
  * @param {string} deviceExternalId - The Gladys device external_id.
  * @returns {void}
  */
 export function forgetDevice(deviceExternalId) {
   lastRefreshAt.delete(deviceExternalId);
-  const prefix = `${deviceExternalId}:`;
-  for (const featureExternalId of lastPublishedStates.keys()) {
-    if (featureExternalId.startsWith(prefix)) {
-      lastPublishedStates.delete(featureExternalId);
-    }
-  }
 }
 
 /**
- * Drop every recorded refresh and published state, so the next poll of each
- * device reads its NUT server again and republishes everything it reports.
- * Called when the configuration changes.
+ * Drop every recorded refresh, and with a `gladys` every published state, so
+ * the next poll of each device reads its NUT server again and republishes
+ * everything it reports. Called when the configuration changes.
+ * @param {object} [gladys] - The SDK instance, whose deduplication memory is
+ * cleared too.
  * @returns {void}
  */
-export function resetRefreshSchedule() {
+export function resetRefreshSchedule(gladys) {
   lastRefreshAt.clear();
-  lastPublishedStates.clear();
+  gladys?.forgetPublishedStates();
 }
 
 function platformId(server, upsName) {
@@ -545,19 +514,15 @@ export function forgetLastReads() {
  * @returns {Promise<number>} The number of states published.
  */
 export async function publishUpsReadings(gladys, config, item, now = Date.now()) {
-  const states = buildUpsStates(gladys, config, item).filter((state) =>
-    isStatePublishable(state, now),
-  );
-  if (states.length > 0) {
-    await gladys.publishStates(states);
-    for (const state of states) {
-      markStatePublished(state, now);
-    }
-  }
+  // The SDK remembers a value only once Gladys accepted it: a failed request
+  // throws, and its states are sent again by the next read.
+  const { count } = await gladys.publishChangedStates(buildUpsStates(gladys, config, item), {
+    heartbeat: STATE_HEARTBEAT,
+  });
   // Recorded once the read succeeded: a failed poll is retried on the next
   // core tick instead of waiting for a whole configured interval.
   markRefreshed(upsIds(gladys, item).device, now);
-  return states.length;
+  return count;
 }
 
 /**
