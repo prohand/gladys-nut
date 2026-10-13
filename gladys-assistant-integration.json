@@ -4,7 +4,9 @@
   "name": "Network UPS Tools (NUT)",
   "description": {
     "en": "Monitor the status, load and battery runtime of the UPS devices on your NUT servers.",
-    "fr": "Suivez l’état, la charge et l’autonomie des onduleurs de vos serveurs Network UPS Tools."
+    "fr": "Suivez l’état, la charge et l’autonomie des onduleurs de vos serveurs Network UPS Tools.",
+    "de": "Überwachen Sie Status, Last und Restlaufzeit der USV-Geräte Ihrer NUT-Server.",
+    "es": "Supervisa el estado, la carga y la autonomía de los SAI de tus servidores NUT."
   },
   "version": "2.2.2",
   "docker_image": "ghcr.io/prohand/gladys-nut:2.2.2",
@@ -18,18 +20,24 @@
       "type": "section",
       "label": {
         "en": "NUT servers",
-        "fr": "Serveurs NUT"
+        "fr": "Serveurs NUT",
+        "de": "NUT-Server",
+        "es": "Servidores NUT"
       },
       "description": {
         "en": "Configure one or more reachable upsd servers. Every UPS exposed by every configured server is discovered as a separate Gladys device.",
-        "fr": "Configurez un ou plusieurs serveurs upsd accessibles. Chaque onduleur exposé par chaque serveur configuré est découvert comme un appareil Gladys distinct."
+        "fr": "Configurez un ou plusieurs serveurs upsd accessibles. Chaque onduleur exposé par chaque serveur configuré est découvert comme un appareil Gladys distinct.",
+        "de": "Konfigurieren Sie einen oder mehrere erreichbare upsd-Server. Jede USV, die ein konfigurierter Server bereitstellt, wird als eigenes Gladys-Gerät erkannt.",
+        "es": "Configura uno o varios servidores upsd accesibles. Cada SAI expuesto por cada servidor configurado se detecta como un dispositivo Gladys independiente."
       },
       "links": [
         {
           "url": "https://networkupstools.org/docs/developer-guide.chunked/net-protocol.html",
           "label": {
             "en": "NUT network protocol",
-            "fr": "Protocole réseau NUT"
+            "fr": "Protocole réseau NUT",
+            "de": "NUT-Netzwerkprotokoll",
+            "es": "Protocolo de red NUT"
           }
         }
       ]
@@ -39,15 +47,21 @@
       "type": "string",
       "label": {
         "en": "Server 1 host",
-        "fr": "Hôte du serveur 1"
+        "fr": "Hôte du serveur 1",
+        "de": "Host von Server 1",
+        "es": "Host del servidor 1"
       },
       "description": {
         "en": "IP address or DNS name of the first NUT upsd server.",
-        "fr": "Adresse IP ou nom DNS du premier serveur NUT upsd."
+        "fr": "Adresse IP ou nom DNS du premier serveur NUT upsd.",
+        "de": "IP-Adresse oder DNS-Name des ersten NUT-upsd-Servers.",
+        "es": "Dirección IP o nombre DNS del primer servidor NUT upsd."
       },
       "placeholder": {
         "en": "192.168.1.20",
-        "fr": "192.168.1.20"
+        "fr": "192.168.1.20",
+        "de": "192.168.1.20",
+        "es": "192.168.1.20"
       },
       "required": true
     },
@@ -56,11 +70,15 @@
       "type": "number",
       "label": {
         "en": "Server 1 port",
-        "fr": "Port du serveur 1"
+        "fr": "Port du serveur 1",
+        "de": "Port von Server 1",
+        "es": "Puerto del servidor 1"
       },
       "description": {
         "en": "The default NUT TCP port is 3493.",
-        "fr": "Le port TCP NUT par défaut est 3493."
+        "fr": "Le port TCP NUT par défaut est 3493.",
+        "de": "Der Standard-TCP-Port von NUT ist 3493.",
+        "es": "El puerto TCP predeterminado de NUT es 3493."
       },
       "required": false,
       "default": 3493,
@@ -72,7 +90,9 @@
       "type": "string",
       "label": {
         "en": "Server 1 username (optional)",
-        "fr": "Nom d’utilisateur du serveur 1 (facultatif)"
+        "fr": "Nom d’utilisateur du serveur 1 (facultatif)",
+        "de": "Benutzername von Server 1 (optional)",
+        "es": "Usuario del servidor 1 (opcional)"
       },
       "required": false
     },
@@ -81,11 +101,15 @@
       "type": "secret",
       "label": {
         "en": "Server 1 password (optional)",
-        "fr": "Mot de passe du serveur 1 (facultatif)"
+        "fr": "Mot de passe du serveur 1 (facultatif)",
+        "de": "Passwort von Server 1 (optional)",
+        "es": "Contraseña del servidor 1 (opcional)"
       },
       "description": {
         "en": "Required when a username is configured.",
-        "fr": "Obligatoire lorsqu’un nom d’utilisateur est configuré."
+        "fr": "Obligatoire lorsqu’un nom d’utilisateur est configuré.",
+        "de": "Erforderlich, wenn ein Benutzername eingetragen ist.",
+        "es": "Obligatoria si se ha configurado un usuario."
       },
       "required": false
     },
@@ -94,11 +118,15 @@
       "type": "string",
       "label": {
         "en": "Server 2 host (optional)",
-        "fr": "Hôte du serveur 2 (facultatif)"
+        "fr": "Hôte du serveur 2 (facultatif)",
+        "de": "Host von Server 2 (optional)",
+        "es": "Host del servidor 2 (opcional)"
       },
       "placeholder": {
         "en": "192.168.1.21",
-        "fr": "192.168.1.21"
+        "fr": "192.168.1.21",
+        "de": "192.168.1.21",
+        "es": "192.168.1.21"
       },
       "required": false
     },
@@ -107,7 +135,9 @@
       "type": "number",
       "label": {
         "en": "Server 2 port",
-        "fr": "Port du serveur 2"
+        "fr": "Port du serveur 2",
+        "de": "Port von Server 2",
+        "es": "Puerto del servidor 2"
       },
       "required": false,
       "default": 3493,
@@ -119,7 +149,9 @@
       "type": "string",
       "label": {
         "en": "Server 2 username",
-        "fr": "Nom d’utilisateur du serveur 2"
+        "fr": "Nom d’utilisateur du serveur 2",
+        "de": "Benutzername von Server 2",
+        "es": "Usuario del servidor 2"
       },
       "required": false
     },
@@ -128,7 +160,9 @@
       "type": "secret",
       "label": {
         "en": "Server 2 password",
-        "fr": "Mot de passe du serveur 2"
+        "fr": "Mot de passe du serveur 2",
+        "de": "Passwort von Server 2",
+        "es": "Contraseña del servidor 2"
       },
       "required": false
     },
@@ -137,11 +171,15 @@
       "type": "string",
       "label": {
         "en": "Server 3 host (optional)",
-        "fr": "Hôte du serveur 3 (facultatif)"
+        "fr": "Hôte du serveur 3 (facultatif)",
+        "de": "Host von Server 3 (optional)",
+        "es": "Host del servidor 3 (opcional)"
       },
       "placeholder": {
         "en": "192.168.1.22",
-        "fr": "192.168.1.22"
+        "fr": "192.168.1.22",
+        "de": "192.168.1.22",
+        "es": "192.168.1.22"
       },
       "required": false
     },
@@ -150,7 +188,9 @@
       "type": "number",
       "label": {
         "en": "Server 3 port",
-        "fr": "Port du serveur 3"
+        "fr": "Port du serveur 3",
+        "de": "Port von Server 3",
+        "es": "Puerto del servidor 3"
       },
       "required": false,
       "default": 3493,
@@ -162,7 +202,9 @@
       "type": "string",
       "label": {
         "en": "Server 3 username",
-        "fr": "Nom d’utilisateur du serveur 3"
+        "fr": "Nom d’utilisateur du serveur 3",
+        "de": "Benutzername von Server 3",
+        "es": "Usuario del servidor 3"
       },
       "required": false
     },
@@ -171,7 +213,9 @@
       "type": "secret",
       "label": {
         "en": "Server 3 password",
-        "fr": "Mot de passe du serveur 3"
+        "fr": "Mot de passe du serveur 3",
+        "de": "Passwort von Server 3",
+        "es": "Contraseña del servidor 3"
       },
       "required": false
     },
@@ -180,11 +224,15 @@
       "type": "string",
       "label": {
         "en": "Server 4 host (optional)",
-        "fr": "Hôte du serveur 4 (facultatif)"
+        "fr": "Hôte du serveur 4 (facultatif)",
+        "de": "Host von Server 4 (optional)",
+        "es": "Host del servidor 4 (opcional)"
       },
       "placeholder": {
         "en": "192.168.1.23",
-        "fr": "192.168.1.23"
+        "fr": "192.168.1.23",
+        "de": "192.168.1.23",
+        "es": "192.168.1.23"
       },
       "required": false
     },
@@ -193,7 +241,9 @@
       "type": "number",
       "label": {
         "en": "Server 4 port",
-        "fr": "Port du serveur 4"
+        "fr": "Port du serveur 4",
+        "de": "Port von Server 4",
+        "es": "Puerto del servidor 4"
       },
       "required": false,
       "default": 3493,
@@ -205,7 +255,9 @@
       "type": "string",
       "label": {
         "en": "Server 4 username",
-        "fr": "Nom d’utilisateur du serveur 4"
+        "fr": "Nom d’utilisateur du serveur 4",
+        "de": "Benutzername von Server 4",
+        "es": "Usuario del servidor 4"
       },
       "required": false
     },
@@ -214,7 +266,9 @@
       "type": "secret",
       "label": {
         "en": "Server 4 password",
-        "fr": "Mot de passe du serveur 4"
+        "fr": "Mot de passe du serveur 4",
+        "de": "Passwort von Server 4",
+        "es": "Contraseña del servidor 4"
       },
       "required": false
     },
@@ -223,11 +277,15 @@
       "type": "string",
       "label": {
         "en": "Server 5 host (optional)",
-        "fr": "Hôte du serveur 5 (facultatif)"
+        "fr": "Hôte du serveur 5 (facultatif)",
+        "de": "Host von Server 5 (optional)",
+        "es": "Host del servidor 5 (opcional)"
       },
       "placeholder": {
         "en": "192.168.1.24",
-        "fr": "192.168.1.24"
+        "fr": "192.168.1.24",
+        "de": "192.168.1.24",
+        "es": "192.168.1.24"
       },
       "required": false
     },
@@ -236,7 +294,9 @@
       "type": "number",
       "label": {
         "en": "Server 5 port",
-        "fr": "Port du serveur 5"
+        "fr": "Port du serveur 5",
+        "de": "Port von Server 5",
+        "es": "Puerto del servidor 5"
       },
       "required": false,
       "default": 3493,
@@ -248,7 +308,9 @@
       "type": "string",
       "label": {
         "en": "Server 5 username",
-        "fr": "Nom d’utilisateur du serveur 5"
+        "fr": "Nom d’utilisateur du serveur 5",
+        "de": "Benutzername von Server 5",
+        "es": "Usuario del servidor 5"
       },
       "required": false
     },
@@ -257,7 +319,9 @@
       "type": "secret",
       "label": {
         "en": "Server 5 password",
-        "fr": "Mot de passe du serveur 5"
+        "fr": "Mot de passe du serveur 5",
+        "de": "Passwort von Server 5",
+        "es": "Contraseña del servidor 5"
       },
       "required": false
     },
@@ -266,11 +330,15 @@
       "type": "number",
       "label": {
         "en": "Refresh interval (s)",
-        "fr": "Intervalle de rafraîchissement (s)"
+        "fr": "Intervalle de rafraîchissement (s)",
+        "de": "Aktualisierungsintervall (s)",
+        "es": "Intervalo de actualización (s)"
       },
       "description": {
         "en": "How often the readings are written to the Gladys history. Each one is a row in the database: keep 300 s unless you need finer measurements. The UPS status is still checked every minute for the scenes.",
-        "fr": "Fréquence d’écriture des mesures dans l’historique Gladys. Chaque mesure est une ligne en base : gardez 300 s sauf besoin réel. L’état de l’onduleur reste vérifié chaque minute pour les scènes."
+        "fr": "Fréquence d’écriture des mesures dans l’historique Gladys. Chaque mesure est une ligne en base : gardez 300 s sauf besoin réel. L’état de l’onduleur reste vérifié chaque minute pour les scènes.",
+        "de": "Wie oft die Messwerte in den Gladys-Verlauf geschrieben werden. Jeder Messwert ist eine Zeile in der Datenbank: Behalten Sie 300 s bei, sofern Sie keine feineren Messungen benötigen. Der USV-Status wird für die Szenen weiterhin jede Minute geprüft.",
+        "es": "Frecuencia con la que las mediciones se escriben en el historial de Gladys. Cada medición es una fila en la base de datos: mantén 300 s salvo que necesites mediciones más finas. El estado del SAI se sigue comprobando cada minuto para las escenas."
       },
       "required": false,
       "default": 300,
@@ -283,7 +351,9 @@
       "key": "test_connection",
       "label": {
         "en": "Test NUT connections",
-        "fr": "Tester les connexions NUT"
+        "fr": "Tester les connexions NUT",
+        "de": "NUT-Verbindungen testen",
+        "es": "Probar las conexiones NUT"
       },
       "timeout_seconds": 20
     }
@@ -293,7 +363,9 @@
       "key": "ups",
       "label": {
         "en": "UPS",
-        "fr": "Onduleur"
+        "fr": "Onduleur",
+        "de": "USV",
+        "es": "SAI"
       },
       "icon": "battery-charging",
       "settings": [
@@ -303,7 +375,9 @@
           "source": "devices",
           "label": {
             "en": "UPS",
-            "fr": "Onduleur"
+            "fr": "Onduleur",
+            "de": "USV",
+            "es": "SAI"
           },
           "required": true
         }
@@ -316,7 +390,9 @@
       "key": "power_lost",
       "label": {
         "en": "UPS: power failure, on battery",
-        "fr": "Onduleur : coupure secteur, sur batterie"
+        "fr": "Onduleur : coupure secteur, sur batterie",
+        "de": "USV: Stromausfall, Batteriebetrieb",
+        "es": "SAI: corte de corriente, con batería"
       },
       "fields": [
         {
@@ -325,7 +401,9 @@
           "source": "devices",
           "label": {
             "en": "UPS (any when empty)",
-            "fr": "Onduleur (tous si vide)"
+            "fr": "Onduleur (tous si vide)",
+            "de": "USV (alle, wenn leer)",
+            "es": "SAI (todos si está vacío)"
           }
         }
       ],
@@ -335,7 +413,9 @@
           "type": "string",
           "label": {
             "en": "UPS name",
-            "fr": "Nom de l’onduleur"
+            "fr": "Nom de l’onduleur",
+            "de": "Name der USV",
+            "es": "Nombre del SAI"
           }
         },
         {
@@ -343,7 +423,9 @@
           "type": "string",
           "label": {
             "en": "NUT status (ups.status)",
-            "fr": "État NUT (ups.status)"
+            "fr": "État NUT (ups.status)",
+            "de": "NUT-Status (ups.status)",
+            "es": "Estado NUT (ups.status)"
           }
         },
         {
@@ -351,7 +433,9 @@
           "type": "number",
           "label": {
             "en": "Battery charge (%)",
-            "fr": "Charge de la batterie (%)"
+            "fr": "Charge de la batterie (%)",
+            "de": "Batterieladung (%)",
+            "es": "Carga de la batería (%)"
           }
         },
         {
@@ -359,7 +443,9 @@
           "type": "number",
           "label": {
             "en": "Battery runtime (min)",
-            "fr": "Autonomie restante (min)"
+            "fr": "Autonomie restante (min)",
+            "de": "Restlaufzeit (min)",
+            "es": "Autonomía restante (min)"
           }
         },
         {
@@ -367,7 +453,9 @@
           "type": "number",
           "label": {
             "en": "Load (%)",
-            "fr": "Charge de l’onduleur (%)"
+            "fr": "Charge de l’onduleur (%)",
+            "de": "USV-Last (%)",
+            "es": "Carga del SAI (%)"
           }
         }
       ]
@@ -376,7 +464,9 @@
       "key": "power_restored",
       "label": {
         "en": "UPS: power restored",
-        "fr": "Onduleur : retour du secteur"
+        "fr": "Onduleur : retour du secteur",
+        "de": "USV: Netzstrom wiederhergestellt",
+        "es": "SAI: corriente restablecida"
       },
       "fields": [
         {
@@ -385,7 +475,9 @@
           "source": "devices",
           "label": {
             "en": "UPS (any when empty)",
-            "fr": "Onduleur (tous si vide)"
+            "fr": "Onduleur (tous si vide)",
+            "de": "USV (alle, wenn leer)",
+            "es": "SAI (todos si está vacío)"
           }
         }
       ],
@@ -395,7 +487,9 @@
           "type": "string",
           "label": {
             "en": "UPS name",
-            "fr": "Nom de l’onduleur"
+            "fr": "Nom de l’onduleur",
+            "de": "Name der USV",
+            "es": "Nombre del SAI"
           }
         },
         {
@@ -403,7 +497,9 @@
           "type": "string",
           "label": {
             "en": "NUT status (ups.status)",
-            "fr": "État NUT (ups.status)"
+            "fr": "État NUT (ups.status)",
+            "de": "NUT-Status (ups.status)",
+            "es": "Estado NUT (ups.status)"
           }
         },
         {
@@ -411,7 +507,9 @@
           "type": "number",
           "label": {
             "en": "Battery charge (%)",
-            "fr": "Charge de la batterie (%)"
+            "fr": "Charge de la batterie (%)",
+            "de": "Batterieladung (%)",
+            "es": "Carga de la batería (%)"
           }
         },
         {
@@ -419,7 +517,9 @@
           "type": "number",
           "label": {
             "en": "Battery runtime (min)",
-            "fr": "Autonomie restante (min)"
+            "fr": "Autonomie restante (min)",
+            "de": "Restlaufzeit (min)",
+            "es": "Autonomía restante (min)"
           }
         },
         {
@@ -427,7 +527,9 @@
           "type": "number",
           "label": {
             "en": "Load (%)",
-            "fr": "Charge de l’onduleur (%)"
+            "fr": "Charge de l’onduleur (%)",
+            "de": "USV-Last (%)",
+            "es": "Carga del SAI (%)"
           }
         }
       ]
@@ -436,7 +538,9 @@
       "key": "battery_low",
       "label": {
         "en": "UPS: battery low",
-        "fr": "Onduleur : batterie faible"
+        "fr": "Onduleur : batterie faible",
+        "de": "USV: Batterie schwach",
+        "es": "SAI: batería baja"
       },
       "fields": [
         {
@@ -445,7 +549,9 @@
           "source": "devices",
           "label": {
             "en": "UPS (any when empty)",
-            "fr": "Onduleur (tous si vide)"
+            "fr": "Onduleur (tous si vide)",
+            "de": "USV (alle, wenn leer)",
+            "es": "SAI (todos si está vacío)"
           }
         }
       ],
@@ -455,7 +561,9 @@
           "type": "string",
           "label": {
             "en": "UPS name",
-            "fr": "Nom de l’onduleur"
+            "fr": "Nom de l’onduleur",
+            "de": "Name der USV",
+            "es": "Nombre del SAI"
           }
         },
         {
@@ -463,7 +571,9 @@
           "type": "string",
           "label": {
             "en": "NUT status (ups.status)",
-            "fr": "État NUT (ups.status)"
+            "fr": "État NUT (ups.status)",
+            "de": "NUT-Status (ups.status)",
+            "es": "Estado NUT (ups.status)"
           }
         },
         {
@@ -471,7 +581,9 @@
           "type": "number",
           "label": {
             "en": "Battery charge (%)",
-            "fr": "Charge de la batterie (%)"
+            "fr": "Charge de la batterie (%)",
+            "de": "Batterieladung (%)",
+            "es": "Carga de la batería (%)"
           }
         },
         {
@@ -479,7 +591,9 @@
           "type": "number",
           "label": {
             "en": "Battery runtime (min)",
-            "fr": "Autonomie restante (min)"
+            "fr": "Autonomie restante (min)",
+            "de": "Restlaufzeit (min)",
+            "es": "Autonomía restante (min)"
           }
         },
         {
@@ -487,7 +601,9 @@
           "type": "number",
           "label": {
             "en": "Load (%)",
-            "fr": "Charge de l’onduleur (%)"
+            "fr": "Charge de l’onduleur (%)",
+            "de": "USV-Last (%)",
+            "es": "Carga del SAI (%)"
           }
         }
       ]
@@ -496,7 +612,9 @@
       "key": "battery_replace",
       "label": {
         "en": "UPS: battery to replace",
-        "fr": "Onduleur : batterie à remplacer"
+        "fr": "Onduleur : batterie à remplacer",
+        "de": "USV: Batterie austauschen",
+        "es": "SAI: sustituir la batería"
       },
       "fields": [
         {
@@ -505,7 +623,9 @@
           "source": "devices",
           "label": {
             "en": "UPS (any when empty)",
-            "fr": "Onduleur (tous si vide)"
+            "fr": "Onduleur (tous si vide)",
+            "de": "USV (alle, wenn leer)",
+            "es": "SAI (todos si está vacío)"
           }
         }
       ],
@@ -515,7 +635,9 @@
           "type": "string",
           "label": {
             "en": "UPS name",
-            "fr": "Nom de l’onduleur"
+            "fr": "Nom de l’onduleur",
+            "de": "Name der USV",
+            "es": "Nombre del SAI"
           }
         },
         {
@@ -523,7 +645,9 @@
           "type": "string",
           "label": {
             "en": "NUT status (ups.status)",
-            "fr": "État NUT (ups.status)"
+            "fr": "État NUT (ups.status)",
+            "de": "NUT-Status (ups.status)",
+            "es": "Estado NUT (ups.status)"
           }
         },
         {
@@ -531,7 +655,9 @@
           "type": "number",
           "label": {
             "en": "Battery charge (%)",
-            "fr": "Charge de la batterie (%)"
+            "fr": "Charge de la batterie (%)",
+            "de": "Batterieladung (%)",
+            "es": "Carga de la batería (%)"
           }
         },
         {
@@ -539,7 +665,9 @@
           "type": "number",
           "label": {
             "en": "Battery runtime (min)",
-            "fr": "Autonomie restante (min)"
+            "fr": "Autonomie restante (min)",
+            "de": "Restlaufzeit (min)",
+            "es": "Autonomía restante (min)"
           }
         },
         {
@@ -547,7 +675,9 @@
           "type": "number",
           "label": {
             "en": "Load (%)",
-            "fr": "Charge de l’onduleur (%)"
+            "fr": "Charge de l’onduleur (%)",
+            "de": "USV-Last (%)",
+            "es": "Carga del SAI (%)"
           }
         }
       ]
@@ -558,7 +688,9 @@
       "key": "get_ups_status",
       "label": {
         "en": "Read a UPS status",
-        "fr": "Lire l’état d’un onduleur"
+        "fr": "Lire l’état d’un onduleur",
+        "de": "Status einer USV lesen",
+        "es": "Leer el estado de un SAI"
       },
       "timeout_seconds": 20,
       "fields": [
@@ -568,7 +700,9 @@
           "source": "devices",
           "label": {
             "en": "UPS",
-            "fr": "Onduleur"
+            "fr": "Onduleur",
+            "de": "USV",
+            "es": "SAI"
           },
           "required": true
         }
@@ -579,7 +713,9 @@
           "type": "string",
           "label": {
             "en": "UPS name",
-            "fr": "Nom de l’onduleur"
+            "fr": "Nom de l’onduleur",
+            "de": "Name der USV",
+            "es": "Nombre del SAI"
           }
         },
         {
@@ -587,7 +723,9 @@
           "type": "string",
           "label": {
             "en": "State (online, on_battery, low_battery…)",
-            "fr": "État (online, on_battery, low_battery…)"
+            "fr": "État (online, on_battery, low_battery…)",
+            "de": "Status (online, on_battery, low_battery…)",
+            "es": "Estado (online, on_battery, low_battery…)"
           }
         },
         {
@@ -595,7 +733,9 @@
           "type": "boolean",
           "label": {
             "en": "On battery",
-            "fr": "Sur batterie"
+            "fr": "Sur batterie",
+            "de": "Batteriebetrieb",
+            "es": "Con batería"
           }
         },
         {
@@ -603,7 +743,9 @@
           "type": "boolean",
           "label": {
             "en": "Battery low",
-            "fr": "Batterie faible"
+            "fr": "Batterie faible",
+            "de": "Batterie schwach",
+            "es": "Batería baja"
           }
         },
         {
@@ -611,7 +753,9 @@
           "type": "boolean",
           "label": {
             "en": "Battery to replace",
-            "fr": "Batterie à remplacer"
+            "fr": "Batterie à remplacer",
+            "de": "Batterie austauschen",
+            "es": "Sustituir la batería"
           }
         },
         {
@@ -619,7 +763,9 @@
           "type": "number",
           "label": {
             "en": "Battery charge (%)",
-            "fr": "Charge de la batterie (%)"
+            "fr": "Charge de la batterie (%)",
+            "de": "Batterieladung (%)",
+            "es": "Carga de la batería (%)"
           }
         },
         {
@@ -627,7 +773,9 @@
           "type": "number",
           "label": {
             "en": "Battery runtime (min)",
-            "fr": "Autonomie restante (min)"
+            "fr": "Autonomie restante (min)",
+            "de": "Restlaufzeit (min)",
+            "es": "Autonomía restante (min)"
           }
         },
         {
@@ -635,7 +783,9 @@
           "type": "number",
           "label": {
             "en": "Load (%)",
-            "fr": "Charge de l’onduleur (%)"
+            "fr": "Charge de l’onduleur (%)",
+            "de": "USV-Last (%)",
+            "es": "Carga del SAI (%)"
           }
         },
         {
@@ -643,7 +793,9 @@
           "type": "number",
           "label": {
             "en": "Input voltage (V)",
-            "fr": "Tension d’entrée (V)"
+            "fr": "Tension d’entrée (V)",
+            "de": "Eingangsspannung (V)",
+            "es": "Tensión de entrada (V)"
           }
         }
       ]

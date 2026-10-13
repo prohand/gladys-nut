@@ -21,7 +21,7 @@ Avec **Gladys 5.1 ou plus** (version minimale requise), l’intégration ajoute 
 - quatre **déclencheurs de scène** : coupure secteur, retour du secteur, batterie faible, batterie à remplacer ;
 - une **action de scène** « Lire l’état d’un onduleur », dont les valeurs sont réutilisables dans la suite de la scène.
 
-Le détail est dans [docs/fr.md](./docs/fr.md).
+Le détail est dans [docs/fr.md](./docs/fr.md) (également en [anglais](./docs/en.md), [allemand](./docs/de.md) et [espagnol](./docs/es.md)).
 
 Les mesures sont écrites dans Gladys via `LIST VAR <upsname>` à la fréquence configurée. L’état `ups.status` est, lui, relu chaque minute pour les déclencheurs de scène, sans rien écrire dans l’historique. Les onduleurs et les fonctionnalités sont découverts dynamiquement, ce qui permet de prendre en charge plusieurs modèles et plusieurs pilotes NUT sans configuration manuelle d’identifiants matériels.
 

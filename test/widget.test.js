@@ -49,8 +49,40 @@ test('shows the charge inline with its unit, binds the other tiles and the chart
   assert.equal(gauge.unit, '%');
   assert.equal(gauge.color, 'danger');
   assert.deepEqual(chart.device_features, [`${device}:battery-charge`, `${device}:load`]);
-  assert.deepEqual(status.items[0].value, { en: 'Low battery', fr: 'Batterie faible' });
+  assert.deepEqual(status.items[0].value, {
+    en: 'Low battery',
+    fr: 'Batterie faible',
+    de: 'Batterie schwach',
+    es: 'Batería baja',
+  });
   assert.equal(status.items[0].color, 'danger');
+});
+
+// Every text the widget shows is read in the reader's language: English,
+// French, German or Spanish.
+function multiLanguageTexts(value, found = []) {
+  if (Array.isArray(value)) {
+    value.forEach((entry) => multiLanguageTexts(entry, found));
+  } else if (value && typeof value === 'object') {
+    if (typeof value.en === 'string') {
+      found.push(value);
+    } else {
+      Object.values(value).forEach((entry) => multiLanguageTexts(entry, found));
+    }
+  }
+  return found;
+}
+
+test('speaks English, French, German and Spanish on every text it shows', () => {
+  const contents = [
+    buildUpsWidgetContent(createFakeGladys(), discovered(fullUps)),
+    loadingContent(),
+  ];
+  const texts = contents.flatMap((content) => multiLanguageTexts(content));
+  assert.ok(texts.length > 10);
+  for (const text of texts) {
+    assert.deepEqual(Object.keys(text), ['en', 'fr', 'de', 'es'], JSON.stringify(text));
+  }
 });
 
 test('shows only what a minimal UPS reports', () => {
@@ -66,7 +98,10 @@ test('shows only what a minimal UPS reports', () => {
 });
 
 test('explains an empty or failing widget instead of failing', () => {
-  assert.deepEqual(validateWidgetContent(buildMessageContent({ en: 'x', fr: 'x' })), []);
+  assert.deepEqual(
+    validateWidgetContent(buildMessageContent({ en: 'x', fr: 'x', de: 'x', es: 'x' })),
+    [],
+  );
 });
 
 let nut;
@@ -102,7 +137,12 @@ test('reads the chosen UPS when the dashboard asks for the widget', async () => 
     {},
     { settings: { ups: device } },
   );
-  assert.deepEqual(message, { en: 'UPS refreshed', fr: 'Onduleur actualisé' });
+  assert.deepEqual(message, {
+    en: 'UPS refreshed',
+    fr: 'Onduleur actualisé',
+    de: 'USV aktualisiert',
+    es: 'SAI actualizado',
+  });
 });
 
 test('serves the read the polls just made, without opening a NUT connection', async () => {

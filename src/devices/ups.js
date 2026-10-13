@@ -529,7 +529,7 @@ export async function publishUpsReadings(gladys, config, item, now = Date.now())
  * The answer of "Test the connection".
  * @param {object} config - The normalized integration configuration.
  * @param {object[]} [results] - The outcome of `readServers`, when already read.
- * @returns {Promise<object>} A `{ en, fr }` message; throws when no server answered.
+ * @returns {Promise<object>} A `{ en, fr, de, es }` message; throws when no server answered.
  */
 export async function testNutConnection(config, results) {
   const { discovered, failures } = await discoverUpsesWithFailures(config, results);
@@ -540,5 +540,7 @@ export async function testNutConnection(config, results) {
   return {
     en: `${discovered.length} UPS device(s) found${names ? `: ${names}.` : '.'}${failed ? ` Not answering: ${failed}.` : ''}`,
     fr: `${discovered.length} onduleur(s) détecté(s)${names ? ` : ${names}.` : '.'}${failed ? ` Sans réponse : ${failed}.` : ''}`,
+    de: `${discovered.length} USV gefunden${names ? `: ${names}.` : '.'}${failed ? ` Keine Antwort: ${failed}.` : ''}`,
+    es: `${discovered.length} SAI detectado(s)${names ? `: ${names}.` : '.'}${failed ? ` Sin respuesta: ${failed}.` : ''}`,
   };
 }

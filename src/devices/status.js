@@ -15,44 +15,49 @@ const PRIMARY_STATES = [
   {
     key: 'forced_shutdown',
     matches: (flags) => flags.has('FSD'),
-    label: { en: 'Forced shutdown', fr: 'Arrêt forcé' },
+    label: {
+      en: 'Forced shutdown',
+      fr: 'Arrêt forcé',
+      de: 'Erzwungenes Abschalten',
+      es: 'Apagado forzado',
+    },
     color: 'danger',
   },
   {
     key: 'low_battery',
     matches: (flags) => flags.has('OB') && flags.has('LB'),
-    label: { en: 'Low battery', fr: 'Batterie faible' },
+    label: { en: 'Low battery', fr: 'Batterie faible', de: 'Batterie schwach', es: 'Batería baja' },
     color: 'danger',
   },
   {
     key: 'on_battery',
     matches: (flags) => flags.has('OB'),
-    label: { en: 'On battery', fr: 'Sur batterie' },
+    label: { en: 'On battery', fr: 'Sur batterie', de: 'Batteriebetrieb', es: 'Con batería' },
     color: 'warning',
   },
   {
     key: 'off',
     matches: (flags) => flags.has('OFF'),
-    label: { en: 'Output off', fr: 'Sortie coupée' },
+    label: { en: 'Output off', fr: 'Sortie coupée', de: 'Ausgang aus', es: 'Salida apagada' },
     color: 'danger',
   },
   {
     key: 'bypass',
     matches: (flags) => flags.has('BYPASS'),
-    label: { en: 'On bypass', fr: 'En bypass' },
+    label: { en: 'On bypass', fr: 'En bypass', de: 'Im Bypass', es: 'En bypass' },
     color: 'warning',
   },
   {
     key: 'online',
     matches: (flags) => flags.has('OL'),
-    label: { en: 'On mains', fr: 'Sur secteur' },
+    label: { en: 'On mains', fr: 'Sur secteur', de: 'Netzbetrieb', es: 'Con red eléctrica' },
     color: 'success',
   },
 ];
 
 const UNKNOWN_STATE = {
   key: 'unknown',
-  label: { en: 'Unknown', fr: 'Inconnu' },
+  label: { en: 'Unknown', fr: 'Inconnu', de: 'Unbekannt', es: 'Desconocido' },
   color: 'neutral',
 };
 

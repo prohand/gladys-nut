@@ -83,13 +83,14 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
 - **Scene triggers fire on transitions** of the `ups.status` flags (`statusEvents`), never on a
   state and never on the first read. Trigger and action keys are stored in users' scenes: never
   rename them.
-- User-facing messages (connection status, action results) are bilingual `{ en, fr }`.
+- User-facing messages (connection status, action results, widget texts) are `{ en, fr, de, es }`.
 
 ### Manifest
 
 `gladys-assistant-integration.json` declares the 5 server slots, `poll_frequency`, `timeout`, the
 `test_connection` action and the 5.1 capabilities (`gladys_version >=5.1.0`).
-`test/manifest.test.js` keeps it in sync with `DEFAULT_CONFIG`, the bounds and the handlers.
+`test/manifest.test.js` keeps it in sync with `DEFAULT_CONFIG`, the bounds and the handlers, and
+checks every text is `{ en, fr, de, es }` within the store length limits.
 
 ## Testing
 
@@ -101,5 +102,5 @@ tests: reset them (`resetRefreshSchedule()` and the scene helpers) in `beforeEac
 ## Conventions
 
 Prettier formats, ESLint catches mistakes. Comments explain **why**. User docs live in
-`docs/fr.md` and `docs/en.md` (re-hosted by Gladys) and the README is French: keep them in sync
-with behaviour changes. The container rootfs is read-only: write nothing.
+`docs/en.md`, `docs/fr.md`, `docs/de.md` and `docs/es.md` (re-hosted by Gladys) and the README is
+French: keep them in sync with behaviour changes. The container rootfs is read-only: write nothing.
