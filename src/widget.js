@@ -42,7 +42,7 @@ function truncate(text, length) {
 
 const refreshButton = {
   type: 'button',
-  label: { en: 'Refresh', fr: 'Actualiser' },
+  label: { en: 'Refresh', fr: 'Actualiser', de: 'Aktualisieren', es: 'Actualizar' },
   icon: 'refresh-cw',
   style: 'secondary',
   action: { key: REFRESH_ACTION },
@@ -50,7 +50,7 @@ const refreshButton = {
 
 /**
  * The content shown when the widget cannot display a UPS.
- * @param {object} message - A `{ en, fr }` explanation.
+ * @param {object} message - A `{ en, fr, de, es }` explanation.
  * @returns {object} The widget content.
  */
 /**
@@ -82,6 +82,8 @@ export function loadingContent() {
         text: {
           en: 'Reading the UPS, this takes longer than usual…',
           fr: 'Lecture de l’onduleur, plus longue que d’habitude…',
+          de: 'USV wird gelesen, das dauert länger als üblich…',
+          es: 'Leyendo el SAI, tarda más de lo habitual…',
         },
       },
     ],
@@ -115,7 +117,7 @@ export function buildUpsWidgetContent(gladys, item) {
     // gauge with no unit at all, so the charge read "97" instead of "97 %".
     components.push({
       type: 'gauge',
-      label: { en: 'Battery', fr: 'Batterie' },
+      label: { en: 'Battery', fr: 'Batterie', de: 'Batterie', es: 'Batería' },
       value: Math.round(readings.get('battery-charge')),
       min: 0,
       max: 100,
@@ -128,7 +130,7 @@ export function buildUpsWidgetContent(gladys, item) {
     // "1 h 25" reads better and the nudge on status change keeps it fresh.
     components.push({
       type: 'value',
-      label: { en: 'Runtime', fr: 'Autonomie' },
+      label: { en: 'Runtime', fr: 'Autonomie', de: 'Restlaufzeit', es: 'Autonomía' },
       value: formatRuntime(readings.get('battery-runtime')),
       icon: 'clock',
       color: status.onBattery ? WIDGET_COLORS.WARNING : WIDGET_COLORS.NEUTRAL,
@@ -137,7 +139,7 @@ export function buildUpsWidgetContent(gladys, item) {
   if (readings.has('load')) {
     components.push({
       type: 'value',
-      label: { en: 'Load', fr: 'Charge' },
+      label: { en: 'Load', fr: 'Charge', de: 'Last', es: 'Carga' },
       device_feature: ids.feature('load'),
       icon: 'activity',
       color: status.overload ? WIDGET_COLORS.DANGER : WIDGET_COLORS.NEUTRAL,
@@ -146,7 +148,12 @@ export function buildUpsWidgetContent(gladys, item) {
   if (readings.has('input-voltage')) {
     components.push({
       type: 'value',
-      label: { en: 'Input voltage', fr: 'Tension d’entrée' },
+      label: {
+        en: 'Input voltage',
+        fr: 'Tension d’entrée',
+        de: 'Eingangsspannung',
+        es: 'Tensión de entrada',
+      },
       device_feature: ids.feature('input-voltage'),
       icon: 'zap',
     });
@@ -157,7 +164,12 @@ export function buildUpsWidgetContent(gladys, item) {
     components.push({
       type: 'chart',
       chart_type: 'line',
-      title: { en: 'Last 24 hours', fr: 'Dernières 24 heures' },
+      title: {
+        en: 'Last 24 hours',
+        fr: 'Dernières 24 heures',
+        de: 'Letzte 24 Stunden',
+        es: 'Últimas 24 horas',
+      },
       unit: '%',
       device_features: chartFeatures.map((key) => ids.feature(key)),
       interval: 'last-day',
@@ -173,7 +185,7 @@ export function buildUpsWidgetContent(gladys, item) {
 function statusItems(item, status, readings) {
   const items = [
     {
-      label: { en: 'State', fr: 'État' },
+      label: { en: 'State', fr: 'État', de: 'Status', es: 'Estado' },
       value: status.label,
       color: status.color,
       icon: status.onBattery ? 'battery' : 'power',
@@ -181,22 +193,22 @@ function statusItems(item, status, readings) {
   ];
   if (status.replaceBattery) {
     items.push({
-      label: { en: 'Battery', fr: 'Batterie' },
-      value: { en: 'Replace it', fr: 'À remplacer' },
+      label: { en: 'Battery', fr: 'Batterie', de: 'Batterie', es: 'Batería' },
+      value: { en: 'Replace it', fr: 'À remplacer', de: 'Austauschen', es: 'Sustituir' },
       color: WIDGET_COLORS.DANGER,
     });
   }
   if (status.overload) {
     items.push({
-      label: { en: 'Load', fr: 'Charge' },
-      value: { en: 'Overload', fr: 'Surcharge' },
+      label: { en: 'Load', fr: 'Charge', de: 'Last', es: 'Carga' },
+      value: { en: 'Overload', fr: 'Surcharge', de: 'Überlast', es: 'Sobrecarga' },
       color: WIDGET_COLORS.DANGER,
     });
   }
   const alarm = String(item.snapshot.variables.get('ups.alarm') ?? '').trim();
   if (alarm) {
     items.push({
-      label: { en: 'Alarm', fr: 'Alarme' },
+      label: { en: 'Alarm', fr: 'Alarme', de: 'Alarm', es: 'Alarma' },
       value: truncate(alarm, 40),
       color: WIDGET_COLORS.WARNING,
     });
@@ -207,10 +219,13 @@ function statusItems(item, status, readings) {
       ? `${readings.get('apparent-power')} VA`
       : null;
   if (power) {
-    items.push({ label: { en: 'Power', fr: 'Puissance' }, value: power });
+    items.push({
+      label: { en: 'Power', fr: 'Puissance', de: 'Leistung', es: 'Potencia' },
+      value: power,
+    });
   }
   items.push({
-    label: { en: 'NUT server', fr: 'Serveur NUT' },
+    label: { en: 'NUT server', fr: 'Serveur NUT', de: 'NUT-Server', es: 'Servidor NUT' },
     value: truncate(`${item.snapshot.name}@${item.server.host}`, 40),
     color: WIDGET_COLORS.NEUTRAL,
   });
@@ -230,12 +245,16 @@ export function registerWidget(gladys, getConfig) {
       return buildMessageContent({
         en: 'The integration is not configured yet.',
         fr: 'L’intégration n’est pas encore configurée.',
+        de: 'Die Integration ist noch nicht konfiguriert.',
+        es: 'La integración aún no está configurada.',
       });
     }
     if (!settings?.ups) {
       return buildMessageContent({
         en: 'Choose a UPS in the settings of this widget.',
         fr: 'Choisissez un onduleur dans les réglages de ce widget.',
+        de: 'Wähle in den Einstellungen dieses Widgets eine USV aus.',
+        es: 'Elija un SAI en los ajustes de este widget.',
       });
     }
     const recent = lastReadUps(settings.ups, LAST_READ_MAX_AGE_MS);
@@ -249,6 +268,8 @@ export function registerWidget(gladys, getConfig) {
       return buildMessageContent({
         en: truncate(`Cannot read the UPS: ${error.message}`, 300),
         fr: truncate(`Lecture de l’onduleur impossible : ${error.message}`, 300),
+        de: truncate(`Die USV kann nicht gelesen werden: ${error.message}`, 300),
+        es: truncate(`No se puede leer el SAI: ${error.message}`, 300),
       });
     }
   });
@@ -260,10 +281,20 @@ export function registerWidget(gladys, getConfig) {
     }
     const config = getConfig();
     if (!config || !settings?.ups) {
-      return { en: 'Nothing to refresh.', fr: 'Rien à actualiser.' };
+      return {
+        en: 'Nothing to refresh.',
+        fr: 'Rien à actualiser.',
+        de: 'Nichts zu aktualisieren.',
+        es: 'Nada que actualizar.',
+      };
     }
     const item = await readUps(gladys, config, settings.ups);
     await publishUpsReadings(gladys, config, item);
-    return { en: 'UPS refreshed', fr: 'Onduleur actualisé' };
+    return {
+      en: 'UPS refreshed',
+      fr: 'Onduleur actualisé',
+      de: 'USV aktualisiert',
+      es: 'SAI actualizado',
+    };
   });
 }

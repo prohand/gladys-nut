@@ -36,6 +36,59 @@ test('respects the store admission limits on the catalog identity', () => {
   assert.match(manifest.docker_image, /:[^:/]+$/, 'the image reference needs an explicit tag');
 });
 
+// Gladys shows its interface in English, French, German and Spanish, and picks
+// the reader's language out of every multi-language object (English when it is
+// missing). A text left without one of them would read in English there.
+const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+function multiLanguageTexts(value, path = 'manifest', found = []) {
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => multiLanguageTexts(entry, `${path}[${index}]`, found));
+  } else if (value && typeof value === 'object') {
+    if (typeof value.en === 'string') {
+      found.push({ path, text: value });
+    } else {
+      for (const [key, entry] of Object.entries(value)) {
+        multiLanguageTexts(entry, `${path}.${key}`, found);
+      }
+    }
+  }
+  return found;
+}
+
+test('every text of the manifest is in English, French, German and Spanish', () => {
+  const texts = multiLanguageTexts(manifest);
+  assert.ok(texts.length > 50);
+  for (const { path, text } of texts) {
+    assert.deepEqual(Object.keys(text), LANGUAGES, `${path} must carry ${LANGUAGES.join(', ')}`);
+    for (const language of LANGUAGES) {
+      assert.ok(text[language].trim(), `${path}.${language} must not be empty`);
+    }
+  }
+});
+
+test('respects the store length limits in every language', () => {
+  const length = (value) => [...value].length;
+  const within = (text, min, max, path) => {
+    for (const language of LANGUAGES) {
+      const size = length(text[language]);
+      assert.ok(size >= min && size <= max, `${path}.${language}: ${size} characters`);
+    }
+  };
+  within(manifest.description, 10, 100, 'description');
+  for (const widget of manifest.widgets) {
+    within(widget.label, 3, 30, `widgets.${widget.key}.label`);
+    if (widget.description) {
+      within(widget.description, 1, 100, `widgets.${widget.key}.description`);
+    }
+  }
+  for (const field of manifest.config_schema.filter(({ type }) => type === 'section')) {
+    if (field.description) {
+      within(field.description, 1, 1000, `config_schema.${field.key}.description`);
+    }
+  }
+});
+
 test('the cover image is pinned to the released tag, never to a branch', () => {
   // A URL that never changes is a URL nobody re-fetches: pinned to `main`, a
   // redrawn cover stayed invisible in the store and on the docs site behind

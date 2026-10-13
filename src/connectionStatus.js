@@ -37,6 +37,8 @@ export function aggregateStatus(serverCount, failures) {
       message: {
         en: `Connected, but ${failures.size} of ${serverCount} NUT servers do not answer: ${details}.`,
         fr: `Connecté, mais ${failures.size} serveur(s) NUT sur ${serverCount} ne répondent pas : ${details}.`,
+        de: `Verbunden, aber ${failures.size} von ${serverCount} NUT-Servern antworten nicht: ${details}.`,
+        es: `Conectado, pero ${failures.size} de ${serverCount} servidores NUT no responden: ${details}.`,
       },
     };
   }
@@ -45,6 +47,8 @@ export function aggregateStatus(serverCount, failures) {
     message: {
       en: `Cannot reach the NUT server(s): ${details}.`,
       fr: `Impossible de joindre le(s) serveur(s) NUT : ${details}.`,
+      de: `NUT-Server nicht erreichbar: ${details}.`,
+      es: `No se puede contactar con los servidores NUT: ${details}.`,
     },
   };
 }
