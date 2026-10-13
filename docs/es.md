@@ -29,7 +29,7 @@ La integración no utiliza TLS (`STARTTLS`): el usuario y la contraseña de NUT,
 3. Añada hasta cuatro servidores adicionales en los campos opcionales si lo necesita.
 4. Para cada servidor, mantenga el puerto `3493` salvo que su instalación use otro. Introduzca las credenciales de NUT si se requiere autenticación.
 5. Elija un intervalo de actualización. El valor predeterminado de 300 segundos es adecuado para la mayoría de las instalaciones. Gladys consulta los dispositivos como mucho una vez por minuto: un intervalo más largo se aplica en la consulta más cercana.
-6. Guarde y luego use **Probar las conexiones NUT**.
+6. Pulse **Guardar configuración** y luego use **Probar las conexiones NUT**.
 
 ### Elegir el intervalo de actualización
 
@@ -70,7 +70,7 @@ El widget muestra la última medición realizada por la integración (de 3 minut
 
 ### Activadores de escena
 
-En el editor de escenas, categoría **Integraciones**:
+En una escena, **Añadir activador → Integraciones**:
 
 | Activador                            | Cuándo                                     |
 | ------------------------------------ | ------------------------------------------ |
@@ -86,7 +86,7 @@ En el editor de escenas, categoría **Integraciones**:
 
 ### Acción de escena «Leer el estado de un SAI»
 
-Lee el SAI elegido y devuelve a las acciones siguientes: `ups_name`, `status` (`online`, `on_battery`, `low_battery`, `forced_shutdown`, `off`, `bypass`, `unknown`), `on_battery`, `low_battery`, `replace_battery`, `battery_charge`, `battery_runtime` (min), `load`, `input_voltage`. Una medición de la que el SAI no informa se omite.
+En una escena, **Nueva acción → Integraciones**. Lee el SAI elegido y devuelve a las acciones siguientes: `ups_name`, `status` (`online`, `on_battery`, `low_battery`, `forced_shutdown`, `off`, `bypass`, `unknown`), `on_battery`, `low_battery`, `replace_battery`, `battery_charge`, `battery_runtime` (min), `load`, `input_voltage`. Una medición de la que el SAI no informa se omite.
 
 Ejemplo: cada mañana, leer el estado del SAI y luego enviar un mensaje con la autonomía restante.
 
@@ -106,7 +106,7 @@ Ejemplo: cada mañana, leer el estado del SAI y luego enviar un mensaje con la a
 | Un SAI dejó de actualizarse tras quitar un servidor de la configuración         | Su servidor ya no se consulta, y los registros lo indican una vez. Vuelva a añadir el servidor o elimine el dispositivo en Gladys.                                                                                                                          |
 | La carga del SAI se muestra como «Desconocido»                                  | Actualice la integración y luego vuelva a añadir el SAI desde la pestaña **Descubrir**: la carga (`ups.load`) se publica ahora en una categoría que permite a Gladys mostrar su nombre, «Load».                                                             |
 
-Para ver los errores detallados, abra los registros de la integración en Gladys. También puede definir `LOG_LEVEL=debug` para obtener registros más detallados.
+Para ver los errores detallados, abra la pestaña **Registros** de la integración en Gladys. También puede definir `LOG_LEVEL=debug` para obtener registros más detallados.
 
 ## Recursos
 

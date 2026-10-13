@@ -5,7 +5,7 @@
   "description": {
     "en": "Monitor the status, load and battery runtime of the UPS devices on your NUT servers.",
     "fr": "Suivez l’état, la charge et l’autonomie des onduleurs de vos serveurs Network UPS Tools.",
-    "de": "Überwachen Sie Status, Last und Restlaufzeit der USV-Geräte Ihrer NUT-Server.",
+    "de": "Überwache Status, Last und Restlaufzeit der USV-Geräte deiner NUT-Server.",
     "es": "Supervise el estado, la carga y la autonomía de los SAI de sus servidores NUT."
   },
   "version": "2.2.2",
@@ -27,7 +27,7 @@
       "description": {
         "en": "Configure one or more reachable upsd servers. Every UPS exposed by every configured server is discovered as a separate Gladys device.",
         "fr": "Configurez un ou plusieurs serveurs upsd accessibles. Chaque onduleur exposé par chaque serveur configuré est découvert comme un appareil Gladys distinct.",
-        "de": "Konfigurieren Sie einen oder mehrere erreichbare upsd-Server. Jede USV, die ein konfigurierter Server bereitstellt, wird als eigenes Gladys-Gerät erkannt.",
+        "de": "Konfiguriere einen oder mehrere erreichbare upsd-Server. Jede USV, die ein konfigurierter Server bereitstellt, wird als eigenes Gladys-Gerät erkannt.",
         "es": "Configure uno o varios servidores upsd accesibles. Cada SAI expuesto por cada servidor configurado se detecta como un dispositivo Gladys independiente."
       },
       "links": [
@@ -337,7 +337,7 @@
       "description": {
         "en": "How often the readings are written to the Gladys history. Each one is a row in the database: keep 300 s unless you need finer measurements. The UPS status is still checked every minute for the scenes.",
         "fr": "Fréquence d’écriture des mesures dans l’historique Gladys. Chaque mesure est une ligne en base : gardez 300 s sauf besoin réel. L’état de l’onduleur reste vérifié chaque minute pour les scènes.",
-        "de": "Wie oft die Messwerte in den Gladys-Verlauf geschrieben werden. Jeder Messwert ist eine Zeile in der Datenbank: Behalten Sie 300 s bei, sofern Sie keine feineren Messungen benötigen. Der USV-Status wird für die Szenen weiterhin jede Minute geprüft.",
+        "de": "Wie oft die Messwerte in den Gladys-Verlauf geschrieben werden. Jeder Messwert ist eine Zeile in der Datenbank: Behalte 300 s bei, sofern du keine feineren Messungen benötigst. Der USV-Status wird für die Szenen weiterhin jede Minute geprüft.",
         "es": "Frecuencia con la que las mediciones se escriben en el historial de Gladys. Cada medición es una fila en la base de datos: mantenga 300 s salvo que necesite mediciones más finas. El estado del SAI se sigue comprobando cada minuto para las escenas."
       },
       "required": false,

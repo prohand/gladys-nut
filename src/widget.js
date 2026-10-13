@@ -253,7 +253,7 @@ export function registerWidget(gladys, getConfig) {
       return buildMessageContent({
         en: 'Choose a UPS in the settings of this widget.',
         fr: 'Choisissez un onduleur dans les réglages de ce widget.',
-        de: 'Wählen Sie in den Einstellungen dieses Widgets eine USV aus.',
+        de: 'Wähle in den Einstellungen dieses Widgets eine USV aus.',
         es: 'Elija un SAI en los ajustes de este widget.',
       });
     }
