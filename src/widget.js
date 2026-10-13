@@ -254,7 +254,7 @@ export function registerWidget(gladys, getConfig) {
         en: 'Choose a UPS in the settings of this widget.',
         fr: 'Choisissez un onduleur dans les réglages de ce widget.',
         de: 'Wählen Sie in den Einstellungen dieses Widgets eine USV aus.',
-        es: 'Elige un SAI en los ajustes de este widget.',
+        es: 'Elija un SAI en los ajustes de este widget.',
       });
     }
     const recent = lastReadUps(settings.ups, LAST_READ_MAX_AGE_MS);

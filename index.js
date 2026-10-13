@@ -38,7 +38,7 @@ const NOT_CONFIGURED = {
   en: 'No NUT server configured yet: fill in the host of the first server, then save.',
   fr: 'Aucun serveur NUT configuré : renseignez l’hôte du premier serveur, puis enregistrez.',
   de: 'Noch kein NUT-Server konfiguriert: Tragen Sie den Host des ersten Servers ein und speichern Sie.',
-  es: 'Aún no hay ningún servidor NUT configurado: indica el host del primer servidor y guarda.',
+  es: 'Aún no hay ningún servidor NUT configurado: indique el host del primer servidor y guarde.',
 };
 
 /**

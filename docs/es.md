@@ -6,38 +6,38 @@ La integración **Network UPS Tools (NUT)** permite a Gladys obtener valores y e
 
 ## Requisitos previos
 
-Tu SAI ya debe funcionar en NUT. Desde la máquina que aloja Gladys, el servidor NUT debería responder al siguiente comando, tras sustituir los marcadores por tus propios valores:
+Su SAI ya debe funcionar en NUT. Desde la máquina que aloja Gladys, el servidor NUT debería responder al siguiente comando, tras sustituir los marcadores por sus propios valores:
 
 ```bash
 upsc <ups-name>@<server-address>
 ```
 
-Por defecto, `upsd` escucha en el puerto TCP **3493**. Asegúrate de que tanto las reglas de red como las ACL de NUT permiten el acceso desde Gladys.
+Por defecto, `upsd` escucha en el puerto TCP **3493**. Asegúrese de que tanto las reglas de red como las ACL de NUT permiten el acceso desde Gladys.
 
 ### Las credenciales viajan en texto plano
 
-La integración no utiliza TLS (`STARTTLS`): el usuario y la contraseña de NUT, así como todas las mediciones, atraviesan la red en texto plano. Mantenla en una red de confianza:
+La integración no utiliza TLS (`STARTTLS`): el usuario y la contraseña de NUT, así como todas las mediciones, atraviesan la red en texto plano. Manténgala en una red de confianza:
 
-- haz que `upsd` escuche solo en la interfaz por la que lo alcanza Gladys (`LISTEN` en `upsd.conf`) y filtra el puerto 3493 para que solo el host de Gladys pueda conectarse;
-- crea en `upsd.users` un usuario dedicado para Gladys, sin `actions` ni `instcmds`: la integración solo lee, así que nunca los necesita;
-- no reutilices nunca esa contraseña en otro sitio.
+- haga que `upsd` escuche solo en la interfaz por la que lo alcanza Gladys (`LISTEN` en `upsd.conf`) y filtre el puerto 3493 para que solo el host de Gladys pueda conectarse;
+- cree en `upsd.users` un usuario dedicado para Gladys, sin `actions` ni `instcmds`: la integración solo lee, así que nunca los necesita;
+- no reutilice nunca esa contraseña en otro sitio.
 
 ## Configuración
 
-1. Abre **Integraciones** y luego **Network UPS Tools (NUT)**.
-2. En la pestaña **Configuración**, introduce el primer servidor `upsd`; su host es obligatorio.
-3. Añade hasta cuatro servidores adicionales en los campos opcionales si lo necesitas.
-4. Para cada servidor, mantén el puerto `3493` salvo que tu instalación use otro. Introduce las credenciales de NUT si se requiere autenticación.
-5. Elige un intervalo de actualización. El valor predeterminado de 300 segundos es adecuado para la mayoría de las instalaciones. Gladys consulta los dispositivos como mucho una vez por minuto: un intervalo más largo se aplica en la consulta más cercana.
-6. Guarda y luego usa **Probar las conexiones NUT**.
+1. Abra **Integraciones** y luego **Network UPS Tools (NUT)**.
+2. En la pestaña **Configuración**, introduzca el primer servidor `upsd`; su host es obligatorio.
+3. Añada hasta cuatro servidores adicionales en los campos opcionales si lo necesita.
+4. Para cada servidor, mantenga el puerto `3493` salvo que su instalación use otro. Introduzca las credenciales de NUT si se requiere autenticación.
+5. Elija un intervalo de actualización. El valor predeterminado de 300 segundos es adecuado para la mayoría de las instalaciones. Gladys consulta los dispositivos como mucho una vez por minuto: un intervalo más largo se aplica en la consulta más cercana.
+6. Guarde y luego use **Probar las conexiones NUT**.
 
 ### Elegir el intervalo de actualización
 
 Cada valor publicado se conserva en el historial de Gladys, y un SAI expone hasta doce valores. Un intervalo corto hace crecer rápidamente la base de datos: a 60 segundos, un solo SAI escribe unas 17 000 filas al día, frente a unas 3500 con el intervalo predeterminado de 300 segundos.
 
-Para reducir aún más ese volumen, la integración solo publica los valores que han cambiado desde la medición anterior; un valor que se mantiene estable se vuelve a publicar al menos una vez por hora para que nunca aparezca como obsoleto. Baja a 60 segundos solo si necesitas una supervisión fina —la autonomía restante durante un corte, por ejemplo— y sube el intervalo hasta 86 400 segundos si prefieres cuidar la base de datos.
+Para reducir aún más ese volumen, la integración solo publica los valores que han cambiado desde la medición anterior; un valor que se mantiene estable se vuelve a publicar al menos una vez por hora para que nunca aparezca como obsoleto. Baje a 60 segundos solo si necesita una supervisión fina —la autonomía restante durante un corte, por ejemplo— y suba el intervalo hasta 86 400 segundos si prefiere cuidar la base de datos.
 
-Una vez establecida la conexión, Gladys detecta todos los SAI que devuelve el servidor NUT. Cada SAI aparece en **Dispositivos descubiertos** como un dispositivo Gladys distinto. En la pestaña **Descubrir**, haz clic en **Añadir a Gladys** en cada SAI que quieras integrar: puedes añadir varios dispositivos de forma independiente. La lista se reconstruye en cada búsqueda (**Buscar**) a partir del comando NUT `LIST UPS`.
+Una vez establecida la conexión, Gladys detecta todos los SAI que devuelve el servidor NUT. Cada SAI aparece en **Dispositivos descubiertos** como un dispositivo Gladys distinto. En la pestaña **Descubrir**, haga clic en **Añadir a Gladys** en cada SAI que quiera integrar: puede añadir varios dispositivos de forma independiente. La lista se reconstruye en cada búsqueda (**Buscar**) a partir del comando NUT `LIST UPS`.
 
 ## Información disponible
 
@@ -58,7 +58,7 @@ La integración requiere **Gladys 5.1 o posterior**.
 
 ### Widget «SAI»
 
-En **Panel → Editar → Nuevo widget**, en la sección **Widgets de integraciones**, elige **SAI** y luego el SAI que quieres mostrar. El widget muestra:
+En **Panel → Editar → Nuevo widget**, en la sección **Widgets de integraciones**, elija **SAI** y luego el SAI que quiere mostrar. El widget muestra:
 
 - la carga de la batería (indicador) y la autonomía restante;
 - la carga del SAI y la tensión de entrada;
@@ -79,7 +79,7 @@ En el editor de escenas, categoría **Integraciones**:
 | SAI: batería baja                    | NUT informa de una batería baja (`LB`)     |
 | SAI: sustituir la batería            | NUT pide una sustitución (`RB`)            |
 
-- Deja vacío el campo **SAI** para reaccionar a todos los SAI.
+- Deje vacío el campo **SAI** para reaccionar a todos los SAI.
 - El estado se comprueba **cada minuto**, sea cual sea el intervalo de actualización: un corte de corriente se detecta en menos de un minuto.
 - Variables disponibles en la escena: `ups_name`, `status`, `battery_charge` (%), `battery_runtime` (min), `load` (%).
 - Al iniciarse la integración, la primera medición sirve de referencia: no se envía ningún evento para un SAI que ya funciona con batería.
@@ -94,19 +94,19 @@ Ejemplo: cada mañana, leer el estado del SAI y luego enviar un mensaje con la a
 
 | Síntoma                                                                         | Comprobaciones recomendadas                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No se encuentra ningún SAI                                                      | Comprueba cada host, cada puerto, el cortafuegos y que haya al menos un SAI configurado en cada `ups.conf`.                                                                                                                                                 |
-| Error de acceso o de autenticación                                              | Comprueba las ACL de `upsd.conf` y las credenciales definidas en `upsd.users`.                                                                                                                                                                              |
-| Faltan algunos valores                                                          | Ejecuta `upsc <ups>@<server>`; Gladys solo puede crear las variables que expone tu controlador NUT.                                                                                                                                                         |
-| Datos obsoletos                                                                 | Un valor estable solo se reescribe una vez por hora, lo cual es normal. Más allá de eso, verifica que el controlador NUT sigue comunicándose con el hardware y revisa los registros de `upsd`.                                                              |
-| La base de datos de Gladys crece demasiado rápido                               | Aumenta el intervalo de actualización: el volumen del historial es directamente proporcional a él. Cada SAI que añades escribe su propio historial.                                                                                                         |
-| Añadir un SAI falla con «dispositivo incompleto o no válido»                    | Actualiza la integración. Ese rechazo (HTTP 422) se debía a funciones publicadas sin sus límites `min` y `max`, que ahora siempre se declaran.                                                                                                              |
-| Los valores no cambian nunca tras añadir el dispositivo                         | Actualiza la integración: los dispositivos se publican ahora con la consulta periódica activada.                                                                                                                                                            |
-| Algunas funciones se muestran sin nombre ni icono                               | Actualiza la integración y luego vuelve a añadir el SAI desde la pestaña **Descubrir** para que se actualicen sus funciones existentes: la carga y la potencia aparente se publicaban con un par categoría/tipo que el front-end de Gladys no sabe dibujar. |
-| El estado de conexión dice «Conectado, pero 1 de 2 servidores NUT no responden» | Los SAI de los demás servidores se siguen leyendo. Comprueba el servidor indicado (host, puerto, cortafuegos, `upsd` en marcha); el estado vuelve a ser simplemente «conectado» en su siguiente respuesta.                                                  |
-| Un SAI dejó de actualizarse tras quitar un servidor de la configuración         | Su servidor ya no se consulta, y los registros lo indican una vez. Vuelve a añadir el servidor o elimina el dispositivo en Gladys.                                                                                                                          |
-| La carga del SAI se muestra como «Desconocido»                                  | Actualiza la integración y luego vuelve a añadir el SAI desde la pestaña **Descubrir**: la carga (`ups.load`) se publica ahora en una categoría que permite a Gladys mostrar su nombre, «Load».                                                             |
+| No se encuentra ningún SAI                                                      | Compruebe cada host, cada puerto, el cortafuegos y que haya al menos un SAI configurado en cada `ups.conf`.                                                                                                                                                 |
+| Error de acceso o de autenticación                                              | Compruebe las ACL de `upsd.conf` y las credenciales definidas en `upsd.users`.                                                                                                                                                                              |
+| Faltan algunos valores                                                          | Ejecute `upsc <ups>@<server>`; Gladys solo puede crear las variables que expone su controlador NUT.                                                                                                                                                         |
+| Datos obsoletos                                                                 | Un valor estable solo se reescribe una vez por hora, lo cual es normal. Más allá de eso, verifique que el controlador NUT sigue comunicándose con el hardware y revise los registros de `upsd`.                                                             |
+| La base de datos de Gladys crece demasiado rápido                               | Aumente el intervalo de actualización: el volumen del historial es directamente proporcional a él. Cada SAI añadido escribe su propio historial.                                                                                                            |
+| Añadir un SAI falla con «dispositivo incompleto o no válido»                    | Actualice la integración. Ese rechazo (HTTP 422) se debía a funciones publicadas sin sus límites `min` y `max`, que ahora siempre se declaran.                                                                                                              |
+| Los valores no cambian nunca tras añadir el dispositivo                         | Actualice la integración: los dispositivos se publican ahora con la consulta periódica activada.                                                                                                                                                            |
+| Algunas funciones se muestran sin nombre ni icono                               | Actualice la integración y luego vuelva a añadir el SAI desde la pestaña **Descubrir** para que se actualicen sus funciones existentes: la carga y la potencia aparente se publicaban con un par categoría/tipo que el front-end de Gladys no sabe dibujar. |
+| El estado de conexión dice «Conectado, pero 1 de 2 servidores NUT no responden» | Los SAI de los demás servidores se siguen leyendo. Compruebe el servidor indicado (host, puerto, cortafuegos, `upsd` en marcha); el estado vuelve a ser simplemente «conectado» en su siguiente respuesta.                                                  |
+| Un SAI dejó de actualizarse tras quitar un servidor de la configuración         | Su servidor ya no se consulta, y los registros lo indican una vez. Vuelva a añadir el servidor o elimine el dispositivo en Gladys.                                                                                                                          |
+| La carga del SAI se muestra como «Desconocido»                                  | Actualice la integración y luego vuelva a añadir el SAI desde la pestaña **Descubrir**: la carga (`ups.load`) se publica ahora en una categoría que permite a Gladys mostrar su nombre, «Load».                                                             |
 
-Para ver los errores detallados, abre los registros de la integración en Gladys. También puedes definir `LOG_LEVEL=debug` para obtener registros más detallados.
+Para ver los errores detallados, abra los registros de la integración en Gladys. También puede definir `LOG_LEVEL=debug` para obtener registros más detallados.
 
 ## Recursos
 
