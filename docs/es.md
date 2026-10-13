@@ -37,7 +37,7 @@ Cada valor publicado se conserva en el historial de Gladys, y un SAI expone hast
 
 Para reducir aún más ese volumen, la integración solo publica los valores que han cambiado desde la medición anterior; un valor que se mantiene estable se vuelve a publicar al menos una vez por hora para que nunca aparezca como obsoleto. Baja a 60 segundos solo si necesitas una supervisión fina —la autonomía restante durante un corte, por ejemplo— y sube el intervalo hasta 86 400 segundos si prefieres cuidar la base de datos.
 
-Una vez establecida la conexión, Gladys detecta todos los SAI que devuelve el servidor NUT. Cada SAI aparece en la detección como un dispositivo Gladys distinto. En la pestaña **Detección**, haz clic en **Añadir** en cada SAI que quieras integrar: puedes añadir varios dispositivos de forma independiente. La lista se reconstruye en cada escaneo a partir del comando NUT `LIST UPS`.
+Una vez establecida la conexión, Gladys detecta todos los SAI que devuelve el servidor NUT. Cada SAI aparece en **Dispositivos descubiertos** como un dispositivo Gladys distinto. En la pestaña **Descubrir**, haz clic en **Añadir a Gladys** en cada SAI que quieras integrar: puedes añadir varios dispositivos de forma independiente. La lista se reconstruye en cada búsqueda (**Buscar**) a partir del comando NUT `LIST UPS`.
 
 ## Información disponible
 
@@ -58,7 +58,7 @@ La integración requiere **Gladys 5.1 o posterior**.
 
 ### Widget «SAI»
 
-En **Panel → Editar → Añadir un widget**, elige **SAI** y luego el SAI que quieres mostrar. El widget muestra:
+En **Panel → Editar → Nuevo widget**, en la sección **Widgets de integraciones**, elige **SAI** y luego el SAI que quieres mostrar. El widget muestra:
 
 - la carga de la batería (indicador) y la autonomía restante;
 - la carga del SAI y la tensión de entrada;
@@ -68,11 +68,11 @@ En **Panel → Editar → Añadir un widget**, elige **SAI** y luego el SAI que 
 
 El widget muestra la última medición realizada por la integración (de 3 minutos como máximo). Cuando el SAI tarda en responder, muestra «Leyendo el SAI…» y se actualiza unos segundos después.
 
-### Disparadores de escena
+### Activadores de escena
 
 En el editor de escenas, categoría **Integraciones**:
 
-| Disparador                           | Cuándo                                     |
+| Activador                            | Cuándo                                     |
 | ------------------------------------ | ------------------------------------------ |
 | SAI: corte de corriente, con batería | el SAI pasa a funcionar con batería (`OB`) |
 | SAI: corriente restablecida          | el SAI vuelve a la red eléctrica (`OL`)    |
@@ -101,10 +101,10 @@ Ejemplo: cada mañana, leer el estado del SAI y luego enviar un mensaje con la a
 | La base de datos de Gladys crece demasiado rápido                               | Aumenta el intervalo de actualización: el volumen del historial es directamente proporcional a él. Cada SAI que añades escribe su propio historial.                                                                                                         |
 | Añadir un SAI falla con «dispositivo incompleto o no válido»                    | Actualiza la integración. Ese rechazo (HTTP 422) se debía a funciones publicadas sin sus límites `min` y `max`, que ahora siempre se declaran.                                                                                                              |
 | Los valores no cambian nunca tras añadir el dispositivo                         | Actualiza la integración: los dispositivos se publican ahora con la consulta periódica activada.                                                                                                                                                            |
-| Algunas funciones se muestran sin nombre ni icono                               | Actualiza la integración y luego vuelve a añadir el SAI desde la pestaña **Detección** para que se actualicen sus funciones existentes: la carga y la potencia aparente se publicaban con un par categoría/tipo que el front-end de Gladys no sabe dibujar. |
+| Algunas funciones se muestran sin nombre ni icono                               | Actualiza la integración y luego vuelve a añadir el SAI desde la pestaña **Descubrir** para que se actualicen sus funciones existentes: la carga y la potencia aparente se publicaban con un par categoría/tipo que el front-end de Gladys no sabe dibujar. |
 | El estado de conexión dice «Conectado, pero 1 de 2 servidores NUT no responden» | Los SAI de los demás servidores se siguen leyendo. Comprueba el servidor indicado (host, puerto, cortafuegos, `upsd` en marcha); el estado vuelve a ser simplemente «conectado» en su siguiente respuesta.                                                  |
 | Un SAI dejó de actualizarse tras quitar un servidor de la configuración         | Su servidor ya no se consulta, y los registros lo indican una vez. Vuelve a añadir el servidor o elimina el dispositivo en Gladys.                                                                                                                          |
-| La carga del SAI se muestra como «Desconocido»                                  | Actualiza la integración y luego vuelve a añadir el SAI desde la pestaña **Detección**: la carga (`ups.load`) se publica ahora en una categoría que permite a Gladys mostrar su nombre, «Carga».                                                            |
+| La carga del SAI se muestra como «Desconocido»                                  | Actualiza la integración y luego vuelve a añadir el SAI desde la pestaña **Descubrir**: la carga (`ups.load`) se publica ahora en una categoría que permite a Gladys mostrar su nombre, «Load».                                                             |
 
 Para ver los errores detallados, abre los registros de la integración en Gladys. También puedes definir `LOG_LEVEL=debug` para obtener registros más detallados.
 

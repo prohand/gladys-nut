@@ -37,7 +37,7 @@ Jeder veröffentlichte Wert wird im Gladys-Verlauf gespeichert, und eine USV ste
 
 Um dieses Volumen weiter zu verringern, veröffentlicht die Integration nur die Werte, die sich seit der vorherigen Messung geändert haben; ein stabil gebliebener Wert wird mindestens einmal pro Stunde erneut veröffentlicht, damit er nie als veraltet angezeigt wird. Gehen Sie nur dann auf 60 Sekunden herunter, wenn Sie eine feine Überwachung benötigen – etwa der Restlaufzeit während eines Stromausfalls –, und erhöhen Sie das Intervall auf bis zu 86.400 Sekunden, wenn Sie die Datenbank lieber schonen möchten.
 
-Sobald die Verbindung steht, erkennt Gladys jede USV, die der NUT-Server meldet. Jede USV erscheint in der Erkennung als eigenes Gladys-Gerät. Klicken Sie im Tab **Erkennung** bei jeder USV, die Sie einbinden möchten, auf **Hinzufügen**: Sie können mehrere Geräte unabhängig voneinander hinzufügen. Die Liste wird bei jedem Scan aus dem NUT-Befehl `LIST UPS` neu aufgebaut.
+Sobald die Verbindung steht, erkennt Gladys jede USV, die der NUT-Server meldet. Jede USV erscheint unter **Entdeckte Geräte** als eigenes Gladys-Gerät. Klicken Sie im Tab **Entdecken** bei jeder USV, die Sie einbinden möchten, auf **Zu Gladys hinzufügen**: Sie können mehrere Geräte unabhängig voneinander hinzufügen. Die Liste wird bei jedem Scan (**Scannen**) aus dem NUT-Befehl `LIST UPS` neu aufgebaut.
 
 ## Verfügbare Informationen
 
@@ -58,7 +58,7 @@ Die Integration erfordert **Gladys 5.1 oder neuer**.
 
 ### Widget „USV“
 
-Wählen Sie unter **Dashboard → Bearbeiten → Widget hinzufügen** das Widget **USV** und anschließend die anzuzeigende USV. Das Widget zeigt:
+Wählen Sie unter **Dashboard → Bearbeiten → Neues Widget** im Abschnitt **Integrations-Widgets** das Widget **USV** und anschließend die anzuzeigende USV. Das Widget zeigt:
 
 - die Batterieladung (Anzeige) und die Restlaufzeit;
 - die USV-Last und die Eingangsspannung;
@@ -101,10 +101,10 @@ Beispiel: Jeden Morgen den USV-Status lesen und dann eine Nachricht mit der Rest
 | Die Gladys-Datenbank wächst zu schnell                                                         | Erhöhen Sie das Aktualisierungsintervall: Die Menge des Verlaufs ist direkt proportional dazu. Jede hinzugefügte USV schreibt ihren eigenen Verlauf.                                                                                                                                    |
 | Das Hinzufügen einer USV scheitert mit „unvollständiges oder ungültiges Gerät“                 | Aktualisieren Sie die Integration. Diese Ablehnung (HTTP 422) kam von Funktionen, die ohne ihre Grenzen `min` und `max` veröffentlicht wurden; diese werden jetzt immer angegeben.                                                                                                      |
 | Die Werte ändern sich nach dem Hinzufügen des Geräts nie                                       | Aktualisieren Sie die Integration: Geräte werden jetzt mit aktivierter periodischer Abfrage veröffentlicht.                                                                                                                                                                             |
-| Einige Funktionen werden ohne Namen oder Symbol angezeigt                                      | Aktualisieren Sie die Integration und fügen Sie die USV dann erneut über den Tab **Erkennung** hinzu, damit ihre bestehenden Funktionen aktualisiert werden: Last und Scheinleistung wurden mit einem Kategorie/Typ-Paar veröffentlicht, das das Gladys-Frontend nicht darstellen kann. |
+| Einige Funktionen werden ohne Namen oder Symbol angezeigt                                      | Aktualisieren Sie die Integration und fügen Sie die USV dann erneut über den Tab **Entdecken** hinzu, damit ihre bestehenden Funktionen aktualisiert werden: Last und Scheinleistung wurden mit einem Kategorie/Typ-Paar veröffentlicht, das das Gladys-Frontend nicht darstellen kann. |
 | Der Verbindungsstatus lautet „Verbunden, aber 1 von 2 NUT-Servern antworten nicht“             | Die USV der anderen Server werden weiterhin gelesen. Prüfen Sie den genannten Server (Host, Port, Firewall, läuft `upsd`); der Status kehrt bei seiner nächsten Antwort zu einfachem „verbunden“ zurück.                                                                                |
 | Eine USV wird nicht mehr aktualisiert, nachdem ein Server aus der Konfiguration entfernt wurde | Ihr Server wird nicht mehr abgefragt, was die Protokolle einmal melden. Fügen Sie den Server wieder hinzu oder löschen Sie das Gerät in Gladys.                                                                                                                                         |
-| Die USV-Last wird als „Unbekannt“ angezeigt                                                    | Aktualisieren Sie die Integration und fügen Sie die USV dann erneut über den Tab **Erkennung** hinzu: Die Last (`ups.load`) wird jetzt in einer Kategorie veröffentlicht, mit der Gladys ihren Namen „Last“ anzeigen kann.                                                              |
+| Die USV-Last wird als „Unbekannt“ angezeigt                                                    | Aktualisieren Sie die Integration und fügen Sie die USV dann erneut über den Tab **Entdecken** hinzu: Die Last (`ups.load`) wird jetzt in einer Kategorie veröffentlicht, mit der Gladys ihren Namen „Load“ anzeigen kann.                                                              |
 
 Ausführliche Fehler finden Sie in den Protokollen der Integration in Gladys. Sie können auch `LOG_LEVEL=debug` setzen, um detailliertere Protokolle zu erhalten.
 
