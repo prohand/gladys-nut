@@ -6,6 +6,10 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-23
+
+- Maintenance release, no functional change.
+
 ## [2.3.0] - 2026-10-13
 
 ### Added
@@ -134,7 +138,8 @@ First public release.
 - Publish UPS polling frequency in milliseconds
 - Support multiple NUT servers and safe discovery payload
 
-[Unreleased]: https://github.com/prohand/gladys-nut/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/prohand/gladys-nut/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/prohand/gladys-nut/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/prohand/gladys-nut/compare/v2.2.2...v2.3.0
 [2.2.2]: https://github.com/prohand/gladys-nut/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/prohand/gladys-nut/compare/v2.2.0...v2.2.1
