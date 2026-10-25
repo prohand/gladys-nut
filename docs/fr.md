@@ -6,6 +6,8 @@ L’intégration **Network UPS Tools (NUT)** permet à Gladys de récupérer les
 
 ## Prérequis
 
+L’intégration demande **Gladys 5.3.0 ou plus**.
+
 Votre onduleur doit déjà être fonctionnel dans NUT. Depuis la machine qui héberge Gladys, le serveur doit répondre à la commande suivante, en remplaçant les valeurs par celles de votre installation :
 
 ```bash
@@ -54,7 +56,7 @@ Les mesures sont publiées uniquement lorsqu’elles sont numériques et effecti
 
 ## Widget, scènes et actions (Gladys 5.1)
 
-L’intégration demande **Gladys 5.1 ou plus**.
+Ils sont toujours disponibles : l’intégration demande **Gladys 5.3 ou plus**.
 
 ### Widget « Onduleur »
 

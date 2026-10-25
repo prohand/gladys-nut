@@ -314,9 +314,9 @@ export function buildUpsDevice(gladys, _config, discovered) {
   return {
     name: upsDisplayName(discovered),
     external_id: ids.device,
-    // Gladys never polls a device that does not ask for it: without
-    // should_poll, the device is created but its values stay frozen on the
-    // ones read at discovery time.
+    // Gladys 5.3 sets should_poll by itself from poll_frequency, but older
+    // cores never poll a device that does not ask for it (its values stayed
+    // frozen on the ones read at discovery time): kept, it is harmless.
     should_poll: true,
     poll_frequency: CORE_POLL_FREQUENCY,
     // Text features are intentionally not published: older Gladys Core releases

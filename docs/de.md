@@ -6,6 +6,8 @@ Mit der Integration **Network UPS Tools (NUT)** ruft Gladys Werte und Zustände 
 
 ## Voraussetzungen
 
+Die Integration erfordert **Gladys 5.3.0 oder neuer**.
+
 Deine USV muss bereits in NUT funktionieren. Von dem Rechner aus, auf dem Gladys läuft, sollte der NUT-Server auf den folgenden Befehl antworten, nachdem du die Platzhalter durch deine eigenen Werte ersetzt hast:
 
 ```bash
@@ -54,7 +56,7 @@ Werte werden nur veröffentlicht, wenn sie numerisch sind und vom Treiber tatsä
 
 ## Widget, Szenen und Aktionen (Gladys 5.1)
 
-Die Integration erfordert **Gladys 5.1 oder neuer**.
+Sie sind immer verfügbar: Die Integration erfordert **Gladys 5.3 oder neuer**.
 
 ### Widget „USV“
 

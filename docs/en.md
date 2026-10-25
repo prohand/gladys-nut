@@ -6,6 +6,8 @@ The **Network UPS Tools (NUT)** integration lets Gladys retrieve values and stat
 
 ## Prerequisites
 
+The integration requires **Gladys 5.3.0 or later**.
+
 Your UPS must already work in NUT. From the machine hosting Gladys, the NUT server should answer the following command, after replacing the placeholders with your own values:
 
 ```bash
@@ -54,7 +56,7 @@ Values are published only when they are numeric and actually reported by the dri
 
 ## Widget, scenes and actions (Gladys 5.1)
 
-The integration requires **Gladys 5.1 or later**.
+They are always available: the integration requires **Gladys 5.3 or later**.
 
 ### "UPS" widget
 
