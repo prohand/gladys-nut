@@ -15,7 +15,7 @@ Au démarrage et à chaque demande de scan, l’intégration exécute `LIST UPS`
 | Électricité         | `input.voltage`, `output.voltage`, `input.current`, `output.current`          | V et A                   |
 | Température         | `ups.temperature`                                                             | °C                       |
 
-Avec **Gladys 5.1 ou plus** (version minimale requise), l’intégration ajoute aussi :
+L’intégration demande **Gladys 5.3 ou plus** (version minimale requise, imposée par les mots-clés de recherche du catalogue). Elle ajoute aussi, depuis Gladys 5.1 :
 
 - un **widget de tableau de bord** « Onduleur » : état, batterie, autonomie, charge, tension, courbe 24 h et bouton d’actualisation ;
 - quatre **déclencheurs de scène** : coupure secteur, retour du secteur, batterie faible, batterie à remplacer ;
@@ -77,8 +77,10 @@ Les tests unitaires couvrent la validation de configuration, l’analyse des ré
 Avant publication, exécutez le validateur du catalogue Gladys :
 
 ```bash
-npx github:GladysAssistant/integration-store .
+npx github:GladysAssistant/integration-store --skip-image-check .
 ```
+
+`--skip-image-check` saute la seule vérification qu’une pull request ne peut pas passer (l’image d’une version incrémentée n’est pas encore publiée) : la CI l’exécute ainsi sur les pull requests, et le workflow de release relance la vérification complète sur le tag, une fois l’image publiée.
 
 Ajoutez ensuite le sujet GitHub `gladys-assistant-integration`, puis utilisez le workflow de release fourni par le template pour construire l’image multi-architecture et publier une version.
 

@@ -24,7 +24,7 @@ node --test --test-name-pattern "heartbeat"  # one test by name
 npm run lint                                 # eslint .
 npm run format:check                         # prettier --check . (CI gate)
 npm run format                               # prettier --write .
-npx github:GladysAssistant/integration-store .   # store admission checks
+npx github:GladysAssistant/integration-store --skip-image-check .   # store admission checks
 ```
 
 CI runs `format:check`, `lint`, `test` on Node 24. Releases: **Actions → Release** only (bumps
@@ -53,8 +53,9 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
   empty sensor. Only numeric variables are published.
 - **Identity = server + UPS name**, so two `ups` names on two servers stay separate devices.
   Changing the id shape orphans existing devices.
-- **Polling**: devices declare `should_poll: true` and `poll_frequency: 60000` (the slowest value
-  Gladys accepts — any other value rejects the whole discovery). Every poll reads `ups.status`
+- **Polling**: devices declare `poll_frequency: 60000` (the slowest value Gladys accepts — any
+  other value rejects the whole discovery) and `should_poll: true` (Gladys 5.3 sets it by itself
+  from `poll_frequency`; it is kept for the devices created by older cores). Every poll reads `ups.status`
   for the scene triggers; readings are only published once per configured interval
   (`isRefreshDue`, 60–86 400 s, default 300 s).
 - **History volume is a feature.** Unchanged states are skipped (the SDK's
@@ -88,7 +89,9 @@ src/widget.js          dashboard widget "Onduleur" (Gladys 5.1)
 ### Manifest
 
 `gladys-assistant-integration.json` declares the 5 server slots, `poll_frequency`, `timeout`, the
-`test_connection` action and the 5.1 capabilities (`gladys_version >=5.1.0`).
+`test_connection` action, the 5.1 capabilities, the catalog `categories` (`servers`, `energy`,
+`network`) and search `keywords` (`gladys_version >=5.3.0`, required by `keywords`; no `countries`:
+worldwide).
 `test/manifest.test.js` keeps it in sync with `DEFAULT_CONFIG`, the bounds and the handlers, and
 checks every text is `{ en, fr, de, es }` within the store length limits.
 

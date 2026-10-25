@@ -6,6 +6,8 @@ La integración **Network UPS Tools (NUT)** permite a Gladys obtener valores y e
 
 ## Requisitos previos
 
+La integración requiere **Gladys 5.3.0 o posterior**.
+
 Su SAI ya debe funcionar en NUT. Desde la máquina que aloja Gladys, el servidor NUT debería responder al siguiente comando, tras sustituir los marcadores por sus propios valores:
 
 ```bash
@@ -54,7 +56,7 @@ Los valores solo se publican cuando son numéricos y el controlador los informa 
 
 ## Widget, escenas y acciones (Gladys 5.1)
 
-La integración requiere **Gladys 5.1 o posterior**.
+Siempre están disponibles: la integración requiere **Gladys 5.3 o posterior**.
 
 ### Widget «SAI»
 

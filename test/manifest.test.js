@@ -10,10 +10,74 @@ const manifest = JSON.parse(
 test('declares a valid multi-server NUT integration identity', () => {
   assert.equal(manifest.type, 'device');
   assert.equal(manifest.name, 'Network UPS Tools (NUT)');
-  assert.deepEqual(manifest.categories, ['energy', 'network']);
+  assert.deepEqual(manifest.categories, ['servers', 'energy', 'network']);
   assert.deepEqual(manifest.transports, ['local']);
   assert.match(manifest.docker_image, /^ghcr\.io\/prohand\/gladys-nut:/);
   assert.equal(manifest.config_schema.filter((field) => field.key.endsWith('_host')).length, 5);
+});
+
+// The store's controlled vocabulary of catalog shelves (Gladys 5.3 added the
+// last four).
+const CATALOG_CATEGORIES = [
+  'climate',
+  'lighting',
+  'energy',
+  'security',
+  'multimedia',
+  'appliances',
+  'environment',
+  'protocols',
+  'network',
+  'notifications',
+  'assistants',
+  'services',
+  'transport',
+  'vehicles',
+  'servers',
+  'leisure',
+];
+
+/**
+ * Major and minor of the `>=` bound of `gladys_version`.
+ * @returns {[number, number]}
+ */
+function minimumGladysVersion() {
+  const match = manifest.gladys_version.match(/^>=\s*(\d+)\.(\d+)\.\d+$/);
+  assert.ok(match, 'gladys_version must be a ">=x.y.z" range');
+  return [Number(match[1]), Number(match[2])];
+}
+
+const atLeast = ([major, minor], [wantedMajor, wantedMinor]) =>
+  major > wantedMajor || (major === wantedMajor && minor >= wantedMinor);
+
+test('the search keywords follow the store rules', () => {
+  // 1 to 10 search-only terms of 2 to 30 characters, unique once trimmed and
+  // lowercased: the store rejects the manifest otherwise.
+  const { keywords } = manifest;
+  assert.ok(Array.isArray(keywords) && keywords.length >= 1 && keywords.length <= 10);
+  const normalized = keywords.map((keyword) => keyword.trim().toLowerCase());
+  assert.equal(new Set(normalized).size, keywords.length, 'keywords must be unique');
+  for (const keyword of normalized) {
+    assert.ok(keyword.length >= 2 && keyword.length <= 30, `keyword "${keyword}" length`);
+  }
+});
+
+test('the integration is worldwide: no countries declared', () => {
+  // `countries` hides an integration from the catalog shelves of every other
+  // country; NUT runs anywhere.
+  assert.equal(manifest.countries, undefined);
+});
+
+test('the gladys_version floor covers every field the manifest declares', () => {
+  // An older core rejects the whole manifest over a field it does not know.
+  const floor = minimumGladysVersion();
+  assert.ok(atLeast(floor, [4, 86]), 'categories requires Gladys >= 4.86.0');
+  if (['widgets', 'scene_triggers', 'scene_actions'].some((field) => field in manifest)) {
+    assert.ok(atLeast(floor, [5, 1]), 'widgets and scenes require Gladys >= 5.1.0');
+  }
+  if (['keywords', 'countries', 'music'].some((field) => field in manifest)) {
+    assert.ok(atLeast(floor, [5, 3]), 'keywords, countries and music require Gladys >= 5.3.0');
+  }
 });
 
 test('respects the store admission limits on the catalog identity', () => {
@@ -32,6 +96,11 @@ test('respects the store admission limits on the catalog identity', () => {
   }
 
   assert.ok(manifest.categories.length >= 1 && manifest.categories.length <= 3);
+  // An unknown shelf is not rejected, it is DROPPED with a warning: a typo
+  // silently costs the integration its place in the catalog.
+  for (const category of manifest.categories) {
+    assert.ok(CATALOG_CATEGORIES.includes(category), `unknown catalog category "${category}"`);
+  }
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   assert.match(manifest.docker_image, /:[^:/]+$/, 'the image reference needs an explicit tag');
 });
@@ -129,12 +198,13 @@ test('protects all optional passwords and exposes the connection test action', (
   );
 });
 
-test('declares the Gladys 5.1 widget and scene capabilities the code handles', async () => {
+test('declares the widget and scene capabilities the code handles', async () => {
   const { SCENE_ACTIONS, SCENE_TRIGGERS } = await import('../src/scenes.js');
   const { UPS_WIDGET } = await import('../src/widget.js');
 
-  // Older cores reject a manifest carrying these fields.
-  assert.equal(manifest.gladys_version, '>=5.1.0');
+  // Older cores reject a manifest carrying these fields (5.1 for the widget and
+  // the scenes, 5.3 for the catalog keywords).
+  assert.equal(manifest.gladys_version, '>=5.3.0');
   assert.deepEqual(
     manifest.widgets.map((widget) => widget.key),
     [UPS_WIDGET],
